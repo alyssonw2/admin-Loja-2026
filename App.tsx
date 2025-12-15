@@ -18,6 +18,7 @@ import Marketplace from './pages/Marketplace';
 import Landing from './pages/Landing';
 import CompleteSetup from './pages/CompleteSetup';
 import Profile from './pages/Profile';
+import AbandonedCarts from './pages/AbandonedCarts';
 import { Page, Order, Customer, Product, Toast, User } from './types';
 import { useMockData } from './hooks/useMockData';
 import ToastContainer from './components/Toast';
@@ -97,6 +98,7 @@ const App: React.FC = () => {
     products, addProduct, updateProduct, deleteProduct, 
     orders, updateOrder,
     customers, addCustomer, // Destructure addCustomer
+    carts, // Destructure carts
     kpi,
     categories, addCategory, updateCategory, deleteCategory,
     brands, addBrand, updateBrand, deleteBrand,
@@ -276,6 +278,7 @@ const App: React.FC = () => {
         return <ProductForm onBack={handleBackToProducts} onSave={handleSaveProduct} product={editingProduct} categories={categories} brands={brands} models={models} materials={materials} colors={colors} showToast={showToast} />;
       case Page.Orders: return <Orders orders={orders} onViewOrder={handleViewOrder} />;
       case Page.OrderDetail: return <OrderDetail order={selectedOrder} onBack={handleBackToOrders} updateOrder={updateOrder} reviews={reviews} showToast={showToast} />;
+      case Page.AbandonedCarts: return <AbandonedCarts carts={carts} />;
       case Page.Coupons: return <Coupons coupons={coupons} addCoupon={addCoupon} updateCoupon={updateCoupon} deleteCoupon={deleteCoupon} showToast={showToast} />;
       case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} showToast={showToast} />; // Pass addCustomer
       case Page.CustomerProfile: return <CustomerProfile customer={selectedCustomer} orders={orders} onBack={handleBackToCustomers} />;

@@ -10,6 +10,7 @@ export enum Page {
   AddEditProduct = 'Adicionar/Editar Produto',
   Orders = 'Pedidos',
   OrderDetail = 'Detalhes do Pedido',
+  AbandonedCarts = 'Carrinho Abandonado',
   Coupons = 'Cupons',
   Customers = 'Clientes',
   CustomerProfile = 'Perfil do Cliente',
@@ -70,11 +71,19 @@ export interface Color {
   hex: string;
 }
 
+export interface ProductMarker {
+  id: string;
+  x: number; // Percentage relative to width (0-100)
+  y: number; // Percentage relative to height (0-100)
+  description: string;
+}
+
 export interface ProductMedia {
   id: string;
   url: string;
   type: 'image' | 'video';
   order: number;
+  markers?: ProductMarker[];
 }
 
 export interface ProductSize {
@@ -97,6 +106,7 @@ export interface Product {
   colorId: string;
   media: ProductMedia[];
   description: string;
+  condition: 'Novo' | 'Usado';
   status: 'Ativo' | 'Inativo';
   width: string;
   height: string;
@@ -134,6 +144,25 @@ export interface Order {
   events: OrderEvent[];
   trackingCode?: string;
   invoiceUrl?: string;
+}
+
+export interface CartItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  price: number;
+  imageUrl: string;
+  size?: string;
+}
+
+export interface Cart {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  items: CartItem[];
+  total: number;
+  updatedAt: string; // Timestamp da última modificação
 }
 
 export interface CustomerAddress {

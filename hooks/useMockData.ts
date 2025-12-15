@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Product, Order, Customer, Category, Brand, Model, Material, StoreSettings, Banner, Coupon, AnalyticsData, Metric, AnalyticsChartDataPoint, Review, Color, Toast, ChannelDistributionChartDataPoint } from '../types';
+import type { Product, Order, Customer, Category, Brand, Model, Material, StoreSettings, Banner, Coupon, AnalyticsData, Metric, AnalyticsChartDataPoint, Review, Color, Toast, ChannelDistributionChartDataPoint, Cart } from '../types';
 import { OrderStatus, AnalyticsPeriod, OrderOrigin } from '../types';
 import { db } from '../services/apiService';
 
@@ -45,6 +45,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [carts, setCarts] = useState<Cart[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
@@ -69,6 +70,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
         fetchedColors,
         fetchedOrders,
         fetchedCustomers,
+        fetchedCarts,
         fetchedCoupons,
         fetchedReviews,
         fetchedBanners,
@@ -82,6 +84,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
         db.getAll<Color>('colors'),
         db.getAll<Order>('orders'),
         db.getAll<Customer>('customers'),
+        db.getAll<Cart>('carts'),
         db.getAll<Coupon>('coupons'),
         db.getAll<Review>('reviews'),
         db.getAll<Banner>('banners'),
@@ -96,6 +99,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
       setColors(fetchedColors);
       setOrders(fetchedOrders);
       setCustomers(fetchedCustomers);
+      setCarts(fetchedCarts);
       setCoupons(fetchedCoupons);
       setReviews(fetchedReviews);
 
@@ -287,6 +291,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
   };
   const reloadReviews = async () => setReviews(await db.getAll('reviews'));
   const reloadCustomers = async () => setCustomers(await db.getAll('customers'));
+  const reloadCarts = async () => setCarts(await db.getAll('carts'));
 
   // Products
   const productCrud = {
@@ -495,6 +500,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
     products, addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.delete,
     orders, updateOrder: orderCrud.update,
     customers, addCustomer: customerCrud.add, // Added addCustomer
+    carts, // Exposed carts state
     kpi,
     categories, addCategory: categoryCrud.add, updateCategory: categoryCrud.update, deleteCategory: categoryCrud.delete,
     brands, addBrand: brandCrud.add, updateBrand: brandCrud.update, deleteBrand: brandCrud.delete,

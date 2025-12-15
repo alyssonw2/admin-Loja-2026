@@ -67,6 +67,7 @@ const REQUIRED_TABLES: TableSchema[] = [
             "material_id": "string",
             "color_id": "string",
             "description": "string",
+            "condition": "string", // Added condition field
             "status": "string",
             "width": "string",
             "height": "string",
@@ -136,6 +137,18 @@ const REQUIRED_TABLES: TableSchema[] = [
         }
     },
     {
+        tableName: `${TABLE_PREFIX}carts`,
+        fields: {
+            "customer_id": "string",
+            "customer_name": "string",
+            "customer_email": "string",
+            "items": "json",
+            "total": "string",
+            "updated_at": "string",
+            "store_id": "string|required"
+        }
+    },
+    {
         tableName: `${TABLE_PREFIX}customers`,
         fields: {
             "name": "string",
@@ -198,7 +211,8 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
         colorId: 'color_id',
         createdAt: 'created_at',
         mercadoLivreStatus: 'mercado_livre_status',
-        mercadoLivreUrl: 'mercado_livre_url'
+        mercadoLivreUrl: 'mercado_livre_url',
+        condition: 'condition' // Explicit map, though not strictly needed if names match
     },
     'categories': {
         parentId: 'parent_id'
@@ -211,6 +225,12 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
         gatewayTransactionId: 'gateway_transaction_id',
         trackingCode: 'tracking_code',
         invoiceUrl: 'invoice_url'
+    },
+    'carts': {
+        customerId: 'customer_id',
+        customerName: 'customer_name',
+        customerEmail: 'customer_email',
+        updatedAt: 'updated_at'
     },
     'customers': {
         joinDate: 'join_date',

@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 // FIX: Added Toast to the import.
-import type { Product, Category, Brand, Model, Material, ProductMedia, Color, Toast, ProductSize } from '../types';
+import type { Product, Category, Brand, Model, Material, ProductMedia, Color, Toast, ProductSize, ProductMarker } from '../types';
 import { generateDescription } from '../services/geminiService';
-import { SparklesIcon, TrashIcon, GripVerticalIcon, VideoCameraIcon, ChevronLeftIcon } from '../components/icons/Icons';
+import { SparklesIcon, TrashIcon, GripVerticalIcon, VideoCameraIcon, ChevronLeftIcon, TagIcon } from '../components/icons/Icons';
+import ImageMarkerModal from '../components/ImageMarkerModal';
 
 interface ProductFormProps {
   onBack: () => void;
@@ -32,6 +33,7 @@ const initialState: Omit<Product, 'id'> = {
   colorId: '',
   media: [],
   description: '',
+  condition: 'Novo', // Default condition
   status: 'Ativo',
   width: '',
   height: '',
@@ -47,6 +49,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
   // Size Management State
   const [newSizeName, setNewSizeName] = useState('');
   const [newSizeQuantity, setNewSizeQuantity] = useState(0);
+
+  // Marker Modal State
+  const [markerModalConfig, setMarkerModalConfig] = useState<{isOpen: boolean, mediaId: string | null}>({isOpen: false, mediaId: null});
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -161,6 +166,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
             url: base64, // Stores the Base64 string directly
             type: file.type.startsWith('video') ? 'video' : 'image',
             order: mediaFiles.length + index + 1,
+            markers: [], // Initialize empty markers
           } as ProductMedia;
         });
 
@@ -185,6 +191,22 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
     dragItem.current = null;
     dragOverItem.current = null;
     setMediaFiles(newMediaFiles.map((item, index) => ({ ...item, order: index + 1 })));
+  };
+
+  // Marker Logic
+  const handleOpenMarkerModal = (mediaId: string) => {
+    setMarkerModalConfig({ isOpen: true, mediaId });
+  };
+
+  const handleSaveMarkers = (markers: ProductMarker[]) => {
+    const { mediaId } = markerModalConfig;
+    if (mediaId) {
+      setMediaFiles(prev => prev.map(m => m.id === mediaId ? { ...m, markers } : m));
+    }
+  };
+
+  const getMediaToAnnotate = () => {
+    return mediaFiles.find(m => m.id === markerModalConfig.mediaId);
   };
 
 
@@ -247,6 +269,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                     <label htmlFor="promotionalPrice" className="block text-sm font-medium text-gray-300 mb-2">Preço Promocional (R$)</label>
                     <input id="promotionalPrice" type="number" name="promotionalPrice" value={formData.promotionalPrice || ''} onChange={handleChange} placeholder="0.00" step="0.01" className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
+                </div>
+                <div>
+                    <label htmlFor="condition" className="block text-sm font-medium text-gray-300 mb-2">Condição</label>
+                    <select id="condition" name="condition" value={formData.condition} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="Novo">Novo</option>
+                        <option value="Usado">Usado</option>
+                    </select>
                 </div>
             </div>
           </fieldset>
@@ -425,7 +454,22 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                             )}
                             
                             <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1 pointer-events-none z-10">
-                                <span className="text-white text-xs text-center font-medium">{index === 0 ? "Principal" : `Posição ${index + 1}`}</span>
+                                <span className="text-white text-xs text-center font-medium mb-2">{index === 0 ? "Principal" : `Posição ${index + 1}`}</span>
+                                {media.type === 'image' && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleOpenMarkerModal(media.id);
+                                        }}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        className="bg-blue-600 hover:bg-blue-500 text-white rounded-full p-1.5 shadow-md mb-2 pointer-events-auto cursor-pointer"
+                                        title="Adicionar Marcadores (Defeitos)"
+                                    >
+                                        <TagIcon className="w-4 h-4"/>
+                                    </button>
+                                )}
                             </div>
 
                             <button 
@@ -443,6 +487,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                             >
                                 <TrashIcon className="w-4 h-4 pointer-events-none"/>
                             </button>
+
+                            {media.markers && media.markers.length > 0 && (
+                                <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow z-20 pointer-events-none">
+                                    {media.markers.length} Tag{media.markers.length > 1 ? 's' : ''}
+                                </div>
+                            )}
 
                             {media.type === 'video' && <VideoCameraIcon className="absolute bottom-1 right-1 text-white w-4 h-4 z-10 drop-shadow-md pointer-events-none"/> }
                             
@@ -482,6 +532,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
           </div>
         </form>
       </div>
+
+      <ImageMarkerModal
+        isOpen={markerModalConfig.isOpen}
+        onClose={() => setMarkerModalConfig({ isOpen: false, mediaId: null })}
+        imageSrc={getMediaToAnnotate()?.url || ''}
+        markers={getMediaToAnnotate()?.markers || []}
+        onSave={handleSaveMarkers}
+      />
     </div>
   );
 };

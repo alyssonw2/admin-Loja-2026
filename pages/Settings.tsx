@@ -6,6 +6,7 @@ import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardI
 import * as whatsappService from '../services/whatsappService';
 import BannerModal from '../components/BannerModal';
 import ImageCropperModal from '../components/ImageCropperModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { db } from '../services/apiService';
 
 
@@ -131,6 +132,9 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [tempLogoImg, setTempLogoImg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete Banner Confirmation State
+  const [deleteBannerConfig, setDeleteBannerConfig] = useState<{isOpen: boolean, banner: Banner | null}>({isOpen: false, banner: null});
 
   // Fetch settings on mount to ensure fields are populated with fresh data
   useEffect(() => {
@@ -388,8 +392,13 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
   };
 
   const handleDeleteBanner = (banner: Banner) => {
-    if (window.confirm(`Tem certeza que deseja excluir o banner "${banner.title}"?`)) {
-      deleteBanner(banner.id);
+    setDeleteBannerConfig({ isOpen: true, banner });
+  };
+
+  const confirmDeleteBanner = () => {
+    if (deleteBannerConfig.banner) {
+        deleteBanner(deleteBannerConfig.banner.id);
+        setDeleteBannerConfig({ isOpen: false, banner: null });
     }
   };
   
@@ -1050,6 +1059,15 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
         onClose={() => setIsCropModalOpen(false)}
         imageSrc={tempLogoImg}
         onCrop={handleCropComplete}
+      />
+      <ConfirmationModal
+        isOpen={deleteBannerConfig.isOpen}
+        onClose={() => setDeleteBannerConfig({ isOpen: false, banner: null })}
+        onConfirm={confirmDeleteBanner}
+        title="Excluir Banner"
+        message={`Tem certeza que deseja excluir o banner "${deleteBannerConfig.banner?.title}"?`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
       />
     </div>
   );
