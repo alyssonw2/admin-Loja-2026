@@ -1,0 +1,96 @@
+
+export const mockData = {
+  "users": [
+    { "id": 1, "username": "admin", "password": "123", "name": "Admin E-connect", "email": "admin@econnect.com", "avatarUrl": "https://picsum.photos/seed/admin/100/100" }
+  ],
+  "categories": [
+    { "id": "cat-01", "name": "Partes de Cima" },
+    { "id": "cat-01-01", "name": "Camisetas", "parentId": "cat-01" },
+    { "id": "cat-01-02", "name": "Moletons", "parentId": "cat-01" },
+    { "id": "cat-01-03", "name": "Jaquetas", "parentId": "cat-01" },
+    { "id": "cat-02", "name": "Partes de Baixo" },
+    { "id": "cat-02-01", "name": "Calças", "parentId": "cat-02" },
+    { "id": "cat-02-02", "name": "Bermudas", "parentId": "cat-02" },
+    { "id": "cat-03", "name": "Acessórios" }
+  ],
+  "brands": [
+    { "id": "brand-01", "name": "Marca A" },
+    { "id": "brand-02", "name": "Marca B" },
+    { "id": "brand-03", "name": "Marca C" }
+  ],
+  "models": [
+    { "id": "model-01", "name": "Slim Fit" },
+    { "id": "model-02", "name": "Regular" },
+    { "id": "model-03", "name": "Oversized" }
+  ],
+  "materials": [
+    { "id": "mat-01", "name": "Algodão" },
+    { "id": "mat-02", "name": "Poliéster" },
+    { "id": "mat-03", "name": "Lã" }
+  ],
+  "colors": [
+    { "id": "color-01", "name": "Preto", "hex": "#000000" },
+    { "id": "color-02", "name": "Branco", "hex": "#FFFFFF" },
+    { "id": "color-03", "name": "Azul Marinho", "hex": "#000080" },
+    { "id": "color-04", "name": "Cinza Mescla", "hex": "#808080" }
+  ],
+  "products": [
+    { "id": "prod-001", "name": "Camiseta de Algodão Premium", "sku": "TS-PREM-BLK", "price": "129.90", "promotionalPrice": "109.90", "stock": "150", "sizes": [{ "name": "P", "quantity": 50 }, { "name": "M", "quantity": 50 }, { "name": "G", "quantity": 50 }], "categoryId": "cat-01-01", "brandId": "brand-01", "modelId": "model-02", "materialId": "mat-01", "colorId": "color-01", "media": [{"id": "media-1", "url": "https://picsum.photos/seed/prod1/400/400", "type": "image", "order": 1}], "status": "Ativo", "description": "Uma camiseta premium feita com 100% algodão pima para máximo conforto e durabilidade.", "width": "25", "height": "5", "depth": "30", "weight": "0.2", "createdAt": "2023-10-01T10:00:00Z", "mercadoLivreStatus": "published", "mercadoLivreUrl": "https://produto.mercadolivre.com.br/MLB-123456789" },
+    { "id": "prod-002", "name": "Calça Jeans Slim Fit", "sku": "JN-SLIM-BLU", "price": "249.90", "stock": "80", "sizes": [{ "name": "38", "quantity": 20 }, { "name": "40", "quantity": 30 }, { "name": "42", "quantity": 30 }], "categoryId": "cat-02-01", "brandId": "brand-02", "modelId": "model-01", "materialId": "mat-01", "colorId": "color-03", "media": [{"id": "media-2", "url": "https://picsum.photos/seed/prod2/400/400", "type": "image", "order": 1}], "status": "Ativo", "description": "Calça jeans com corte slim fit moderno, perfeita para qualquer ocasião.", "width": "30", "height": "8", "depth": "40", "weight": "0.8", "createdAt": "2023-10-05T14:30:00Z", "mercadoLivreStatus": "published", "mercadoLivreUrl": "https://produto.mercadolivre.com.br/MLB-987654321" },
+    { "id": "prod-003", "name": "Moletom com Capuz", "sku": "HD-LOGO-GRY", "price": "199.50", "stock": "120", "sizes": [{ "name": "M", "quantity": 60 }, { "name": "G", "quantity": 60 }], "categoryId": "cat-01-02", "brandId": "brand-01", "modelId": "model-03", "materialId": "mat-02", "colorId": "color-04", "media": [{"id": "media-3", "url": "https://picsum.photos/seed/prod3/400/400", "type": "image", "order": 1}], "status": "Ativo", "description": "Moletom aconchegante com capuz e bolso canguru, ideal para dias frios.", "width": "40", "height": "15", "depth": "50", "weight": "1.2", "createdAt": "2023-10-10T09:15:00Z" }
+  ],
+  "orders": [
+    { "id": "ord-1024", "customerName": "Ana Silva", "customerEmail": "ana.silva@example.com", "customerId": "cust-01", "shippingAddress": "Rua das Flores, 123, São Paulo, SP, 01000-000", "date": "2023-10-26T10:00:00Z", "total": 249.9, "status": "Entregue", "origin": "Site", "items": [{ "productId": "prod-002", "productName": "Calça Jeans Slim Fit", "quantity": 1, "price": 249.9, "imageUrl": "https://picsum.photos/seed/prod2/100/100" }], "gatewayTransactionId": "txn_123abc456def", "trackingCode": "BR123456789BR", "invoiceUrl": "#", "events": [ { "timestamp": "2023-10-26T10:00:00Z", "status": "Pendente", "description": "Pagamento aprovado." }, { "timestamp": "2023-10-26T14:00:00Z", "status": "Processando", "description": "Pedido em preparação." }, { "timestamp": "2023-10-27T09:00:00Z", "status": "Enviado", "description": "Pedido enviado." }, { "timestamp": "2023-10-28T16:00:00Z", "status": "Entregue", "description": "Pedido entregue." } ] },
+    { "id": "ord-1025", "customerName": "Bruno Costa", "customerEmail": "bruno.costa@example.com", "customerId": "cust-02", "shippingAddress": "Avenida Brasil, 456, Rio de Janeiro, RJ, 20000-000", "date": "2023-10-26T11:00:00Z", "total": 129.9, "status": "Enviado", "origin": "Mercado Livre", "items": [{ "productId": "prod-001", "productName": "Camiseta de Algodão Premium", "quantity": 1, "price": 129.9, "imageUrl": "https://picsum.photos/seed/prod1/100/100" }], "gatewayTransactionId": "txn_789ghi012jkl", "trackingCode": "BR987654321BR", "invoiceUrl": "#", "events": [ { "timestamp": "2023-10-26T11:00:00Z", "status": "Pendente", "description": "Pagamento aprovado." }, { "timestamp": "2023-10-26T15:00:00Z", "status": "Processando", "description": "Pedido em preparação." }, { "timestamp": "2023-10-27T10:00:00Z", "status": "Enviado", "description": "Pedido enviado." } ] },
+    { "id": "ord-1026", "customerName": "Carlos Souza", "customerEmail": "carlos.souza@example.com", "customerId": "cust-03", "shippingAddress": "Rua Teste, 789, Belo Horizonte, MG, 30000-000", "date": "2023-10-27T15:00:00Z", "total": 199.5, "status": "Pendente", "origin": "Whatsapp", "items": [{ "productId": "prod-003", "productName": "Moletom com Capuz", "quantity": 1, "price": 199.5, "imageUrl": "https://picsum.photos/seed/prod3/100/100" }], "gatewayTransactionId": "txn_mno345pqr678", "events": [{ "timestamp": "2023-10-27T15:00:00Z", "status": "Pendente", "description": "Pedido recebido via Whatsapp." }] }
+  ],
+  "customers": [
+    { "id": "cust-01", "name": "Ana Silva", "email": "ana.silva@example.com", "joinDate": "2023-01-15", "totalSpent": 1250.5, "avatarUrl": "https://picsum.photos/seed/cust1/100/100" },
+    { "id": "cust-02", "name": "Bruno Costa", "email": "bruno.costa@example.com", "joinDate": "2023-02-20", "totalSpent": 890.0, "avatarUrl": "https://picsum.photos/seed/cust2/100/100" },
+    { "id": "cust-03", "name": "Carlos Souza", "email": "carlos.souza@example.com", "joinDate": "2023-10-27", "totalSpent": 199.5, "avatarUrl": "https://picsum.photos/seed/cust3/100/100" }
+  ],
+  "coupons": [
+    { "id": "cup-1", "code": "BEMVINDO10", "type": "Primeira Compra", "discountType": "Porcentagem", "discountValue": "10", "minPurchaseValue": "0", "isActive": true },
+    { "id": "cup-2", "code": "PIX5", "type": "Desconto no PIX", "discountType": "Porcentagem", "discountValue": "5", "minPurchaseValue": "50", "isActive": true }
+  ],
+  "reviews": [
+    { "id": "rev-1", "customerName": "Ana Silva", "customerPhotoUrl": "https://picsum.photos/seed/rev1/100/100", "rating": 5, "comment": "Amei a calça! Qualidade excelente e a entrega foi super rápida. Recomendo!", "date": "2023-10-29", "orderId": "ord-1024" },
+    { "id": "rev-2", "customerName": "Marcos Alves", "customerPhotoUrl": "https://picsum.photos/seed/rev2/100/100", "rating": 4, "comment": "A calça tem um caimento ótimo, mas achei o tecido um pouco fino.", "date": "2023-10-18" }
+  ],
+  "settings": {
+    "storeName": "E-connect",
+    "domain": "www.econnect.com.br",
+    "address": { "street": "Avenida Principal", "number": "123", "complement": "Sala 45", "neighborhood": "Centro", "city": "São Paulo", "state": "SP", "zipCode": "01000-000" },
+    "branding": { 
+      "logoUrl": "",
+      "primaryColor": "#6366f1", 
+      "secondaryColor": "#ec4899", 
+      "accentColor": "#f59e0b",
+      "backgroundColor": "#ffffff",
+      "textColor": "#1f2937",
+      "headerBackgroundColor": "#ffffff",
+      "headerTextColor": "#111827",
+      "footerBackgroundColor": "#111827",
+      "footerTextColor": "#f3f4f6",
+      "headingFont": "Inter",
+      "bodyFont": "Inter"
+    },
+    "banners": [ { "id": "banner-1", "imageUrl": "https://picsum.photos/seed/banner1/1200/400", "title": "Promoção de Inverno", "description": "Até 50% de desconto em jaquetas e moletons.", "buttonText": "Conferir Agora", "buttonUrl": "/promocao" } ],
+    "infoPages": { "about": "Bem-vindo à E-connect!", "howToBuy": "1. Escolha seu produto...", "returns": "Nossa política de devolução..." },
+    "email": { "smtpHost": "", "smtpPort": "587", "smtpUser": "", "smtpPass": "", "purchaseConfirmationBody": "Olá {{cliente}},\n\nObrigado pela sua compra! Seu pedido #{{pedido_id}} foi confirmado." },
+    "connectivity": { "whatsappPhone": "553171722176+AJLoja", "whatsappStatus": "Desconectado" },
+    "socialMedia": { "facebook": "https://facebook.com/econnect", "instagram": "https://instagram.com/econnect", "tiktok": "", "youtube": "" },
+    "integrations": { "mercadoPagoPublicKey": "", "mercadoPagoToken": "", "mercadoLivreUser": "", "mercadoLivreToken": "", "mercadoLivreStatus": "Desconectado" },
+    "shipping": { "melhorEnvioToken": "", "additionalDays": 0, "additionalCost": 0, "freeShippingPolicy": { "enabled": false, "minValue": 200, "cities": "" } },
+    "ai": { "googleAiToken": "", "assistantName": "VestiBot", "restrictions": "Seja amigável.", "trainingText": "Tópicos de treinamento: \n- Horário de funcionamento: 09:00 às 18:00\n- Prazo de entrega: 5 dias úteis\n- Formas de pagamento: PIX, Cartão" },
+    "seo": {
+      "googleAnalyticsId": "",
+      "googleMerchantCenterId": "",
+      "googleMyBusinessId": "",
+      "facebookXmlUrl": "",
+      "googleXmlUrl": "",
+      "customHeadScript": ""
+    }
+  }
+};
+export default mockData;

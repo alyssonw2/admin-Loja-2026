@@ -1,6 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://idmhjpsuoxzyshzttgmq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkbWhqcHN1b3h6eXNoenR0Z21xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNjQ0OTMsImV4cCI6MjA3OTg0MDQ5M30.SGlFj9_niUk6n2TxkxYnWtbrP-x2dYIlisabTx5rw7w';
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// This file is obsolete as Supabase connection has been removed.
+// It is kept empty to avoid breaking imports in files that haven't been refactored yet.
+export const supabase = {
+    // Dummy object to prevent crash if accidentally called
+    auth: {
+        getSession: async () => ({ error: null, data: { session: null } }),
+        signInWithPassword: async () => ({ error: { message: "Supabase disabled" }, data: {} }),
+        setPersistence: async () => {},
+        getUser: async () => ({ data: { user: null } })
+    },
+    from: () => ({
+        select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }), order: () => ({ data: [], error: null }) }) }),
+        insert: () => ({ select: () => ({ single: () => ({ data: {}, error: null }) }) }),
+        update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: {}, error: null }) }) }) }),
+        delete: () => ({ eq: () => ({ error: null }) })
+    })
+};

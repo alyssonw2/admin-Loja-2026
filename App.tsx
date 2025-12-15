@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -14,6 +15,9 @@ import Chat from './pages/Chat';
 import Coupons from './pages/Coupons';
 import Reviews from './pages/Reviews';
 import Marketplace from './pages/Marketplace';
+import Landing from './pages/Landing';
+import CompleteSetup from './pages/CompleteSetup';
+import Profile from './pages/Profile';
 import { Page, Order, Customer, Product, Toast, User } from './types';
 import { useMockData } from './hooks/useMockData';
 import ToastContainer from './components/Toast';
@@ -25,11 +29,15 @@ const App: React.FC = () => {
   const [bootMessage, setBootMessage] = useState('Inicializando sistema...');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const [currentPage, setCurrentPage] = useState<Page>(Page.Dashboard);
+  const [currentPage, setCurrentPage] = useState<Page>(Page.Landing); // Landing é a inicial por padrão
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  
+  // State for Registration Flow
+  const [pendingStoreId, setPendingStoreId] = useState<number | string | null>(null);
+  const [pendingZipCode, setPendingZipCode] = useState<string>('');
   
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
@@ -85,6 +93,7 @@ const App: React.FC = () => {
 
   const { 
     isLoading: isDataLoading,
+    refreshData,
     products, addProduct, updateProduct, deleteProduct, 
     orders, updateOrder,
     customers,
@@ -108,6 +117,33 @@ const App: React.FC = () => {
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
+    setCurrentPage(Page.Landing);
+  }, []);
+
+  const handleUpdateUser = useCallback((updatedUser: User) => {
+      setCurrentUser(updatedUser);
+  }, []);
+
+  // Handlers for Registration Flow
+  const handleRegisterSuccess = useCallback((storeId: number | string, zipCode: string) => {
+      setPendingStoreId(storeId);
+      setPendingZipCode(zipCode);
+      setCurrentPage(Page.CompleteSetup);
+  }, []);
+
+  const handleSetupComplete = useCallback(() => {
+      // Simula o login automático após o setup completo
+      const fakeUser: User = {
+          id: 999,
+          username: 'admin',
+          name: 'Admin da Loja',
+          email: 'admin@loja.com',
+          avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=random'
+      };
+      setCurrentUser(fakeUser);
+      setPendingStoreId(null);
+      setPendingZipCode('');
+      setCurrentPage(Page.Dashboard);
   }, []);
 
   const handleViewOrder = useCallback((order: Order) => {
@@ -153,6 +189,12 @@ const App: React.FC = () => {
     }
     handleBackToProducts();
   }, [addProduct, updateProduct, handleBackToProducts]);
+
+  // Handle sidebar navigation with data refresh
+  const handleNavigation = useCallback((page: Page) => {
+    setCurrentPage(page);
+    refreshData(); // Forces reload whenever a menu item is clicked
+  }, [refreshData]);
   
   React.useEffect(() => {
     if (selectedOrder) {
@@ -166,7 +208,7 @@ const App: React.FC = () => {
   }, [orders, selectedOrder, handleBackToOrders]);
 
   const LoadingScreen = ({ message }: { message: string }) => (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white animate-fade-in">
         <div className="text-center">
             <svg className="mx-auto h-12 w-12 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -193,10 +235,25 @@ const App: React.FC = () => {
     );
   }
   
+  // Roteamento para usuários NÃO autenticados
   if (!currentUser) {
-    return <Login onLoginSuccess={handleLoginSuccess} showToast={showToast} />;
+      if (currentPage === Page.Login) {
+          return (
+            <Login 
+                onLoginSuccess={handleLoginSuccess} 
+                onNavigateToRegister={() => setCurrentPage(Page.Landing)}
+                showToast={showToast} 
+            />
+          );
+      }
+      if (currentPage === Page.CompleteSetup && pendingStoreId) {
+          return <CompleteSetup storeId={pendingStoreId} initialZipCode={pendingZipCode} onComplete={handleSetupComplete} showToast={showToast} />;
+      }
+      // Padrão para não logados: Landing Page
+      return <Landing onNavigateToLogin={() => setCurrentPage(Page.Login)} onRegisterSuccess={handleRegisterSuccess} showToast={showToast} />;
   }
 
+  // Se logado, mas carregando dados (exceto se for uma página que não precisa de dados)
   if (isDataLoading || !storeSettings) {
      return <LoadingScreen message="Carregando dados da loja..." />
   }
@@ -228,17 +285,28 @@ const App: React.FC = () => {
         return <Settings settings={storeSettings} updateSettings={updateStoreSettings} addBanner={addBanner} updateBanner={updateBanner} deleteBanner={deleteBanner} showToast={showToast}/>;
       case Page.MarketplaceMercadoLivre:
         return <Marketplace settings={storeSettings} updateSettings={updateStoreSettings} products={products} updateProduct={updateProduct} showToast={showToast} />;
+      case Page.Profile:
+        return <Profile user={currentUser} onUpdateUser={handleUpdateUser} showToast={showToast} />;
       default: return <Dashboard kpi={kpi} recentOrders={orders} salesData={analyticsData.chart} theme={theme} />;
     }
   };
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 font-sans">
-      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} onLogout={handleLogout} />
+      <Sidebar currentPage={currentPage} setCurrentPage={handleNavigation} onLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header currentPage={currentPage} user={currentUser} onLogout={handleLogout} theme={theme} toggleTheme={toggleTheme} />
+        <Header 
+            currentPage={currentPage} 
+            user={currentUser} 
+            onLogout={handleLogout} 
+            onNavigate={setCurrentPage}
+            theme={theme} 
+            toggleTheme={toggleTheme} 
+        />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900">
-          {renderPage()}
+          <div key={currentPage} className="animate-fade-in min-h-full">
+            {renderPage()}
+          </div>
         </main>
       </div>
       <ToastContainer toasts={toasts} removeToast={removeToast} />

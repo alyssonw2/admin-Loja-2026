@@ -4,7 +4,8 @@ import type { Product, Category, Brand, Model, Material, Color, Toast } from '..
 import CategoryModal from '../components/CategoryModal';
 import ColorModal from '../components/ColorModal';
 import CatalogModal from '../components/CatalogModal';
-import { PencilIcon, TrashIcon, ProductIcon } from '../components/icons/Icons';
+import ConfirmationModal from '../components/ConfirmationModal';
+import { PencilIcon, TrashIcon, ProductIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon } from '../components/icons/Icons';
 
 type CatalogItem = { id: string; name: string };
 
@@ -87,6 +88,8 @@ interface ProductsProps {
 
 const Products: React.FC<ProductsProps> = (props) => {
   const [activeTab, setActiveTab] = useState('products');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Product; direction: 'asc' | 'desc' } | null>(null);
   
   // Specific Modals State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -94,6 +97,9 @@ const Products: React.FC<ProductsProps> = (props) => {
   
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
   const [editingColor, setEditingColor] = useState<Color | null>(null);
+
+  // Deletion State
+  const [deleteProductConfig, setDeleteProductConfig] = useState<{isOpen: boolean, product: Product | null}>({isOpen: false, product: null});
 
   // Generic Catalog Modal State (Brands, Models, Materials)
   const [catalogModalConfig, setCatalogModalConfig] = useState<{
@@ -104,11 +110,72 @@ const Products: React.FC<ProductsProps> = (props) => {
 
   const { products, categories } = props;
 
-  // --- Product Logic ---
-  const handleDeleteProduct = (product: Product) => {
-    if (window.confirm(`Tem certeza que deseja excluir o produto "${product.name}"?`)) {
-        props.deleteProduct(product.id);
+  // --- Search and Sort Logic ---
+  const handleSort = (key: keyof Product) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
     }
+    setSortConfig({ key, direction });
+  };
+
+  const filteredAndSortedProducts = useMemo(() => {
+    let result = [...products];
+
+    // Filter
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(lowerTerm) ||
+        p.sku.toLowerCase().includes(lowerTerm)
+      );
+    }
+
+    // Sort
+    if (sortConfig) {
+      result.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Handle string representation of numbers for sorting
+        if (sortConfig.key === 'price' || sortConfig.key === 'stock') {
+           const numA = parseFloat(aValue as string) || 0;
+           const numB = parseFloat(bValue as string) || 0;
+           if (numA < numB) return sortConfig.direction === 'asc' ? -1 : 1;
+           if (numA > numB) return sortConfig.direction === 'asc' ? 1 : -1;
+           return 0;
+        }
+
+        // Default string comparison
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [products, searchTerm, sortConfig]);
+
+  const SortHeader = ({ label, sortKey }: { label: string, sortKey: keyof Product }) => (
+    <th className="p-4 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort(sortKey)}>
+      <div className="flex items-center gap-1">
+        {label}
+        {sortConfig?.key === sortKey && (
+          sortConfig.direction === 'asc' ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />
+        )}
+      </div>
+    </th>
+  );
+
+  // --- Product Logic ---
+  const handleRequestDeleteProduct = (product: Product) => {
+      setDeleteProductConfig({ isOpen: true, product });
+  };
+
+  const handleConfirmDeleteProduct = () => {
+      if (deleteProductConfig.product) {
+          props.deleteProduct(deleteProductConfig.product.id);
+          setDeleteProductConfig({ isOpen: false, product: null });
+      }
   };
 
   // --- Category Logic ---
@@ -242,6 +309,14 @@ const Products: React.FC<ProductsProps> = (props) => {
     }
   }
 
+  // Calculate total stock from sizes if available
+  const getProductStock = (product: Product) => {
+      if (product.sizes && product.sizes.length > 0) {
+          return product.sizes.reduce((acc, curr) => acc + curr.quantity, 0);
+      }
+      return product.stock;
+  };
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
@@ -297,52 +372,82 @@ const Products: React.FC<ProductsProps> = (props) => {
       </div>
 
       {activeTab === 'products' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="p-4 text-gray-600 dark:text-gray-300">Produto</th>
-                <th className="p-4 text-gray-600 dark:text-gray-300">SKU</th>
-                <th className="p-4 text-gray-600 dark:text-gray-300">Preço</th>
-                <th className="p-4 text-gray-600 dark:text-gray-300">Estoque</th>
-                <th className="p-4 text-gray-600 dark:text-gray-300">Status</th>
-                <th className="p-4 text-gray-600 dark:text-gray-300 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.length === 0 ? (
+        <>
+          <div className="mb-4 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon className="text-gray-400 w-5 h-5" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar por nome ou SKU..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full md:w-1/2 lg:w-1/3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            />
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <td colSpan={6} className="text-center p-8 text-gray-500 dark:text-gray-400">Nenhum produto cadastrado.</td>
+                  <SortHeader label="Produto" sortKey="name" />
+                  <SortHeader label="SKU" sortKey="sku" />
+                  <SortHeader label="Preço" sortKey="price" />
+                  <SortHeader label="Estoque" sortKey="stock" />
+                  <SortHeader label="Status" sortKey="status" />
+                  <SortHeader label="Data Cadastro" sortKey="createdAt" />
+                  <th className="p-4 text-gray-600 dark:text-gray-300 text-right">Ações</th>
                 </tr>
-              ) : (products.map((product) => (
-                <tr key={product.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="p-4 flex items-center">
-                    {product.media && product.media.length > 0 ? (
-                        <img src={product.media[0].url} alt={product.name} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-200 dark:bg-gray-700" />
-                    ) : (
-                        <div className="w-12 h-12 rounded-md mr-4 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                            <ProductIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-                        </div>
-                    )}
-                    <span className="font-medium text-gray-900 dark:text-white">{product.name}</span>
-                  </td>
-                  <td className="p-4 text-gray-500 dark:text-gray-400">{product.sku}</td>
-                  <td className="p-4 text-gray-900 dark:text-white">R$ {product.price.toFixed(2)}</td>
-                  <td className="p-4 text-gray-900 dark:text-white">{product.stock}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${product.status === 'Ativo' ? 'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400'}`}>
-                      {product.status}
-                    </span>
-                  </td>
-                  <td className="p-4 space-x-4 text-right">
-                    <button onClick={() => props.onEditProductClick(product)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"><PencilIcon /></button>
-                    <button onClick={() => handleDeleteProduct(product)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"><TrashIcon /></button>
-                  </td>
-                </tr>
-              )))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredAndSortedProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center p-8 text-gray-500 dark:text-gray-400">
+                      {searchTerm ? 'Nenhum produto encontrado para a busca.' : 'Nenhum produto cadastrado.'}
+                    </td>
+                  </tr>
+                ) : (filteredAndSortedProducts.map((product) => (
+                  <tr key={product.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td className="p-4 flex items-center">
+                      {product.media && product.media.length > 0 ? (
+                          <img src={product.media[0].url} alt={product.name} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-200 dark:bg-gray-700" />
+                      ) : (
+                          <div className="w-12 h-12 rounded-md mr-4 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                              <ProductIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+                          </div>
+                      )}
+                      <span className="font-medium text-gray-900 dark:text-white">{product.name}</span>
+                    </td>
+                    <td className="p-4 text-gray-500 dark:text-gray-400">{product.sku}</td>
+                    <td className="p-4 text-gray-900 dark:text-white">
+                        {product.promotionalPrice && parseFloat(product.promotionalPrice) > 0 ? (
+                            <div className="flex flex-col">
+                                <span className="text-red-400 font-bold">R$ {Number(product.promotionalPrice).toFixed(2)}</span>
+                                <span className="text-xs text-gray-500 line-through">R$ {Number(product.price).toFixed(2)}</span>
+                            </div>
+                        ) : (
+                            <span>R$ {Number(product.price).toFixed(2)}</span>
+                        )}
+                    </td>
+                    <td className="p-4 text-gray-900 dark:text-white">{getProductStock(product)}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${product.status === 'Ativo' ? 'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400'}`}>
+                        {product.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-500 dark:text-gray-400 text-sm">
+                        {product.createdAt ? new Date(product.createdAt).toLocaleDateString('pt-BR') : '-'}
+                    </td>
+                    <td className="p-4 space-x-4 text-right">
+                      <button onClick={() => props.onEditProductClick(product)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"><PencilIcon /></button>
+                      <button onClick={() => handleRequestDeleteProduct(product)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"><TrashIcon /></button>
+                    </td>
+                  </tr>
+                )))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {activeTab === 'categories' && (
@@ -464,6 +569,16 @@ const Products: React.FC<ProductsProps> = (props) => {
         title={getCatalogModalTitle()}
         itemName={getCatalogItemName()}
         showToast={props.showToast}
+      />
+
+      <ConfirmationModal
+        isOpen={deleteProductConfig.isOpen}
+        onClose={() => setDeleteProductConfig({ isOpen: false, product: null })}
+        onConfirm={handleConfirmDeleteProduct}
+        title="Excluir Produto"
+        message={`Tem certeza que deseja excluir o produto "${deleteProductConfig.product?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
       />
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { Coupon, Toast } from '../types';
 import { CouponType, DiscountType } from '../types';
@@ -14,8 +15,8 @@ const initialState: Omit<Coupon, 'id'> = {
   code: '',
   type: CouponType.FirstPurchase,
   discountType: DiscountType.Percentage,
-  discountValue: 0,
-  minPurchaseValue: 0,
+  discountValue: '',
+  minPurchaseValue: '',
   isActive: true,
 };
 
@@ -34,12 +35,9 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, onSave, coup
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const isNumeric = ['discountValue', 'minPurchaseValue'].includes(name);
-
-    let processedValue: string | number | boolean = value;
-    if (isNumeric) {
-        processedValue = Number(value);
-    } else if (name === 'isActive') {
+    
+    let processedValue: string | boolean = value;
+    if (name === 'isActive') {
         processedValue = value === 'true';
     }
 
@@ -49,7 +47,7 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, onSave, coup
         // Logic for Free Shipping
         if (name === 'type' && value === CouponType.FreeShipping) {
             newState.discountType = null;
-            newState.discountValue = 0;
+            newState.discountValue = '0';
         } else if (name === 'type' && value !== CouponType.FreeShipping && prev.type === CouponType.FreeShipping) {
             // Revert to a default discount type if changing from Free Shipping
             newState.discountType = DiscountType.Percentage;

@@ -1,16 +1,12 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // FIX: Added Toast to the import.
 import type { StoreSettings, Banner, Toast, WhatsAppProduct } from '../types';
-import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon } from '../components/icons/Icons';
+import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon } from '../components/icons/Icons';
 import * as whatsappService from '../services/whatsappService';
 import BannerModal from '../components/BannerModal';
 import ImageCropperModal from '../components/ImageCropperModal';
+import { db } from '../services/apiService';
 
 
 interface SettingsProps {
@@ -24,6 +20,97 @@ interface SettingsProps {
 }
 
 const INSTANCE_NAME = "E-connect";
+
+const GOOGLE_FONTS = [
+    { name: 'Inter', family: 'Inter, sans-serif' },
+    { name: 'Roboto', family: 'Roboto, sans-serif' },
+    { name: 'Open Sans', family: '"Open Sans", sans-serif' },
+    { name: 'Montserrat', family: 'Montserrat, sans-serif' },
+    { name: 'Lato', family: 'Lato, sans-serif' },
+    { name: 'Playfair Display', family: '"Playfair Display", serif' },
+    { name: 'Merriweather', family: 'Merriweather, serif' },
+    { name: 'Oswald', family: 'Oswald, sans-serif' },
+    { name: 'Raleway', family: 'Raleway, sans-serif' },
+    { name: 'Poppins', family: 'Poppins, sans-serif' }
+];
+
+// Components extracted to prevent re-renders losing focus
+interface InputFieldProps {
+  label: string;
+  name: string;
+  value: string | number;
+  section: string;
+  placeholder?: string;
+  type?: string;
+  disabled?: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+}
+
+const InputField: React.FC<InputFieldProps> = ({label, name, value, section, placeholder = '', type = 'text', disabled = false, onChange}) => (
+  <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+      <input id={name} type={type} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-600 disabled:cursor-not-allowed" />
+  </div>
+);
+
+interface ColorPickerFieldProps {
+  label: string;
+  name: string;
+  value: string;
+  section: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const ColorPickerField: React.FC<ColorPickerFieldProps> = ({ label, name, value, section, onChange }) => (
+  <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+      <div className="flex items-center gap-2">
+          <input 
+              id={name} 
+              type="color" 
+              name={name} 
+              data-section={section} 
+              value={value || '#000000'}
+              onChange={onChange} 
+              className="p-1 h-10 w-14 block bg-gray-700 border border-gray-600 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none" 
+          />
+          <input 
+              type="text" 
+              name={name} 
+              data-section={section} 
+              value={value || ''} 
+              onChange={onChange}
+              className="bg-gray-700 text-white p-2 h-10 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm uppercase"
+              pattern="^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$"
+          />
+      </div>
+  </div>
+);
+
+interface TextAreaFieldProps {
+  label: string;
+  name: string;
+  value: string;
+  section: string;
+  rows?: number;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+}
+
+const TextAreaField: React.FC<TextAreaFieldProps> = ({label, name, value, section, rows = 4, onChange}) => (
+   <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+      <textarea id={name} name={name} data-section={section} value={value} onChange={onChange} rows={rows} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
+  </div>
+);
+
+// Helper for displaying code snippets in API tab
+const CodeBlock = ({ code, language = 'json' }: { code: string; language?: string }) => (
+  <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto border border-gray-700 my-2">
+    <pre className="text-sm font-mono text-gray-300">
+      <code className={`language-${language}`}>{code}</code>
+    </pre>
+  </div>
+);
 
 const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner, updateBanner, deleteBanner, showToast }) => {
   const [activeTab, setActiveTab] = useState('loja');
@@ -45,32 +132,57 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
   const [tempLogoImg, setTempLogoImg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-
+  // Fetch settings on mount to ensure fields are populated with fresh data
   useEffect(() => {
-    setFormData({
-      ...settings,
-      banners: settings.banners || [],
-      seo: settings.seo || {
-        googleAnalyticsId: '',
-        googleMerchantCenterId: '',
-        googleMyBusinessId: '',
-        facebookXmlUrl: '',
-        googleXmlUrl: '',
-        customHeadScript: ''
-      },
-      branding: {
-         ...settings.branding,
-         // Fallbacks for new color fields if old data is loaded
-         accentColor: settings.branding.accentColor || '#f59e0b',
-         backgroundColor: settings.branding.backgroundColor || '#ffffff',
-         textColor: settings.branding.textColor || '#1f2937',
-         headerBackgroundColor: settings.branding.headerBackgroundColor || '#ffffff',
-         headerTextColor: settings.branding.headerTextColor || '#111827',
-         footerBackgroundColor: settings.branding.footerBackgroundColor || '#111827',
-         footerTextColor: settings.branding.footerTextColor || '#f3f4f6'
-      }
-    });
-    setConnectionStatus(settings.connectivity.whatsappStatus);
+      const loadSettings = async () => {
+          try {
+              // Parallel fetch for settings (config) and banners (separate table)
+              const [fetchedSettings, fetchedBanners] = await Promise.all([
+                  db.getSettings(),
+                  db.getAll<Banner>('banners')
+              ]);
+
+              if (fetchedSettings) {
+                  console.log("Settings fetched from API:", fetchedSettings);
+                  setFormData(prev => ({
+                      ...prev,
+                      ...fetchedSettings,
+                      // Ensure merging respects existing nested structures if fetch returns partials
+                      branding: { ...prev.branding, ...fetchedSettings.branding },
+                      address: { ...prev.address, ...fetchedSettings.address },
+                      connectivity: { ...prev.connectivity, ...fetchedSettings.connectivity },
+                      socialMedia: { ...prev.socialMedia, ...fetchedSettings.socialMedia },
+                      integrations: { ...prev.integrations, ...fetchedSettings.integrations },
+                      shipping: { ...prev.shipping, ...fetchedSettings.shipping },
+                      ai: { ...prev.ai, ...fetchedSettings.ai },
+                      seo: { ...prev.seo, ...fetchedSettings.seo },
+                      // Prefer fetched banners from table
+                      banners: fetchedBanners
+                  }));
+                  setConnectionStatus(fetchedSettings.connectivity?.whatsappStatus || 'Desconectado');
+              }
+          } catch (e) {
+              console.error("Error fetching settings on mount:", e);
+          }
+      };
+      loadSettings();
+  }, []);
+
+  // Sync with props only when they change significantly or for specific updates
+  useEffect(() => {
+    if(settings) {
+        setFormData(prev => ({
+            ...prev,
+            ...settings,
+            // Always update banners from props to ensure deletions/additions are reflected
+            banners: settings.banners || [],
+            branding: { ...prev.branding, ...settings.branding },
+            address: { ...prev.address, ...settings.address },
+            connectivity: { ...prev.connectivity, ...settings.connectivity },
+            // ... map other fields if necessary for strict sync
+        }));
+        setConnectionStatus(settings.connectivity.whatsappStatus);
+    }
   }, [settings]);
   
   const checkStatus = useCallback(async () => {
@@ -104,7 +216,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
       }
   }, [activeTab, connectionStatus]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, dataset, type } = e.target;
     const section = dataset.section as keyof StoreSettings | undefined;
 
@@ -185,6 +297,10 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
   };
   
   const handleConnect = async () => {
+    // Explicitly save settings first to ensure phone number is persisted
+    // This addresses the user requirement to register phone data before connecting
+    updateSettings(formData);
+
     setIsLoading(true);
     setConnectionStatus('Conectando');
     setQrCode(null);
@@ -301,50 +417,14 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
     { id: 'redes', label: 'Redes Sociais', icon: ShareIcon },
     { id: 'pagamento', label: 'Mercado Pago', icon: CreditCardIcon },
     { id: 'frete', label: 'Frete', icon: TruckIcon },
+    { id: 'api', label: 'API / Integração', icon: CodeBracketIcon },
   ];
   
-  const InputField = ({label, name, value, section, placeholder = '', type = 'text', disabled = false}: {label: string, name: string, value: string | number, section: string, placeholder?: string, type?: string, disabled?: boolean}) => (
-    <div>
-        <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-        <input id={name} type={type} name={name} data-section={section} value={value} onChange={handleInputChange} placeholder={placeholder} disabled={disabled} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-600 disabled:cursor-not-allowed" />
-    </div>
-  );
-
-  const ColorPickerField = ({ label, name, value, section }: { label: string, name: string, value: string, section: string }) => (
-    <div>
-        <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-        <div className="flex items-center gap-2">
-            <input 
-                id={name} 
-                type="color" 
-                name={name} 
-                data-section={section} 
-                value={value || '#000000'}
-                onChange={handleInputChange} 
-                className="p-1 h-10 w-14 block bg-gray-700 border border-gray-600 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none" 
-            />
-            <input 
-                type="text" 
-                name={name} 
-                data-section={section} 
-                value={value || ''} 
-                onChange={handleInputChange}
-                className="bg-gray-700 text-white p-2 h-10 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm uppercase"
-                pattern="^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$"
-            />
-        </div>
-    </div>
-  );
-  
-  const TextAreaField = ({label, name, value, section, rows = 4}: {label: string, name: string, value: string, section: string, rows?: number}) => (
-     <div>
-        <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-        <textarea id={name} name={name} data-section={section} value={value} onChange={handleInputChange} rows={rows} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
-    </div>
-  );
-
   return (
     <div className="p-8">
+        <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=${formData.branding.headingFont?.replace(' ', '+')}&family=${formData.branding.bodyFont?.replace(' ', '+')}&display=swap');
+        `}</style>
       <h2 className="text-2xl font-bold text-white mb-6">Configurações da Loja</h2>
       
       <div className="flex flex-col lg:flex-row gap-8">
@@ -375,20 +455,20 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">Dados da Loja</h3>
                 <div className="space-y-6">
-                  <InputField label="Nome da Loja" name="storeName" value={formData.storeName} section="" />
-                  <InputField label="Domínio" name="domain" value={formData.domain || ''} section="" placeholder="www.sualoja.com.br" />
+                  <InputField label="Nome da Loja" name="storeName" value={formData.storeName} section="" onChange={handleInputChange} />
+                  <InputField label="Domínio" name="domain" value={formData.domain || ''} section="" placeholder="www.sualoja.com.br" onChange={handleInputChange} />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InputField label="Rua" name="street" value={formData.address.street} section="address" />
-                    <InputField label="Número" name="number" value={formData.address.number} section="address" />
+                    <InputField label="Rua" name="street" value={formData.address.street} section="address" onChange={handleInputChange} />
+                    <InputField label="Número" name="number" value={formData.address.number} section="address" onChange={handleInputChange} />
                   </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InputField label="Complemento" name="complement" value={formData.address.complement} section="address" />
-                    <InputField label="Bairro" name="neighborhood" value={formData.address.neighborhood} section="address" />
+                    <InputField label="Complemento" name="complement" value={formData.address.complement} section="address" onChange={handleInputChange} />
+                    <InputField label="Bairro" name="neighborhood" value={formData.address.neighborhood} section="address" onChange={handleInputChange} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <InputField label="Cidade" name="city" value={formData.address.city} section="address" />
-                    <InputField label="Estado" name="state" value={formData.address.state} section="address" />
-                    <InputField label="CEP" name="zipCode" value={formData.address.zipCode} section="address" />
+                    <InputField label="Cidade" name="city" value={formData.address.city} section="address" onChange={handleInputChange} />
+                    <InputField label="Estado" name="state" value={formData.address.state} section="address" onChange={handleInputChange} />
+                    <InputField label="CEP" name="zipCode" value={formData.address.zipCode} section="address" onChange={handleInputChange} />
                   </div>
                 </div>
               </section>
@@ -402,33 +482,78 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                    <div>
                        <h4 className="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Identidade Principal</h4>
                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <ColorPickerField label="Cor Primária" name="primaryColor" value={formData.branding.primaryColor} section="branding" />
-                            <ColorPickerField label="Cor Secundária" name="secondaryColor" value={formData.branding.secondaryColor} section="branding" />
-                            <ColorPickerField label="Cor de Destaque" name="accentColor" value={formData.branding.accentColor} section="branding" />
+                            <ColorPickerField label="Cor Primária" name="primaryColor" value={formData.branding.primaryColor} section="branding" onChange={handleInputChange} />
+                            <ColorPickerField label="Cor Secundária" name="secondaryColor" value={formData.branding.secondaryColor} section="branding" onChange={handleInputChange} />
+                            <ColorPickerField label="Cor de Destaque" name="accentColor" value={formData.branding.accentColor} section="branding" onChange={handleInputChange} />
                        </div>
                    </div>
 
                    <div>
                        <h4 className="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Estrutura Geral</h4>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ColorPickerField label="Fundo do Site" name="backgroundColor" value={formData.branding.backgroundColor} section="branding" />
-                            <ColorPickerField label="Texto Principal" name="textColor" value={formData.branding.textColor} section="branding" />
+                            <ColorPickerField label="Fundo do Site" name="backgroundColor" value={formData.branding.backgroundColor} section="branding" onChange={handleInputChange} />
+                            <ColorPickerField label="Texto Principal" name="textColor" value={formData.branding.textColor} section="branding" onChange={handleInputChange} />
                        </div>
                    </div>
 
                    <div>
                        <h4 className="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Cabeçalho e Navegação</h4>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ColorPickerField label="Fundo do Cabeçalho" name="headerBackgroundColor" value={formData.branding.headerBackgroundColor} section="branding" />
-                            <ColorPickerField label="Texto/Ícones do Cabeçalho" name="headerTextColor" value={formData.branding.headerTextColor} section="branding" />
+                            <ColorPickerField label="Fundo do Cabeçalho" name="headerBackgroundColor" value={formData.branding.headerBackgroundColor} section="branding" onChange={handleInputChange} />
+                            <ColorPickerField label="Texto/Ícones do Cabeçalho" name="headerTextColor" value={formData.branding.headerTextColor} section="branding" onChange={handleInputChange} />
                        </div>
                    </div>
 
                    <div>
                        <h4 className="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Rodapé</h4>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ColorPickerField label="Fundo do Rodapé" name="footerBackgroundColor" value={formData.branding.footerBackgroundColor} section="branding" />
-                            <ColorPickerField label="Texto do Rodapé" name="footerTextColor" value={formData.branding.footerTextColor} section="branding" />
+                            <ColorPickerField label="Fundo do Rodapé" name="footerBackgroundColor" value={formData.branding.footerBackgroundColor} section="branding" onChange={handleInputChange} />
+                            <ColorPickerField label="Texto do Rodapé" name="footerTextColor" value={formData.branding.footerTextColor} section="branding" onChange={handleInputChange} />
+                       </div>
+                   </div>
+
+                   <div>
+                       <h4 className="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Tipografia</h4>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <div>
+                               <label htmlFor="headingFont" className="block text-sm font-medium text-gray-300 mb-2">Fonte de Títulos</label>
+                               <select 
+                                   id="headingFont" 
+                                   name="headingFont" 
+                                   data-section="branding" 
+                                   value={formData.branding.headingFont} 
+                                   onChange={handleInputChange} 
+                                   className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                               >
+                                   {GOOGLE_FONTS.map(font => (
+                                       <option key={font.name} value={font.name} style={{ fontFamily: font.family }}>{font.name}</option>
+                                   ))}
+                               </select>
+                           </div>
+                           <div>
+                               <label htmlFor="bodyFont" className="block text-sm font-medium text-gray-300 mb-2">Fonte de Texto</label>
+                               <select 
+                                   id="bodyFont" 
+                                   name="bodyFont" 
+                                   data-section="branding" 
+                                   value={formData.branding.bodyFont} 
+                                   onChange={handleInputChange} 
+                                   className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                               >
+                                   {GOOGLE_FONTS.map(font => (
+                                       <option key={font.name} value={font.name} style={{ fontFamily: font.family }}>{font.name}</option>
+                                   ))}
+                               </select>
+                           </div>
+                       </div>
+                       
+                       {/* Live Preview */}
+                       <div className="mt-6 p-6 rounded-lg bg-white text-gray-900 border border-gray-300">
+                           <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Pré-visualização</p>
+                           <h2 className="text-3xl font-bold mb-3" style={{ fontFamily: formData.branding.headingFont }}>Título de Exemplo</h2>
+                           <p className="text-lg leading-relaxed" style={{ fontFamily: formData.branding.bodyFont }}>
+                               Este é um exemplo de como o texto do seu site ficará. A tipografia correta melhora a legibilidade e fortalece a identidade da sua marca.
+                           </p>
                        </div>
                    </div>
 
@@ -506,7 +631,6 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                     </button>
                 </div>
                 <div className="space-y-4">
-                  {/* Safety check for banners array */}
                   {formData.banners && formData.banners.length > 0 ? formData.banners.map(banner => (
                     <div key={banner.id} className="bg-gray-700 p-4 rounded-lg flex items-center gap-4">
                       <img src={banner.imageUrl} alt={banner.title} className="w-32 h-16 object-cover rounded-md bg-gray-600" />
@@ -530,13 +654,13 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">Configurações de E-mail (SMTP)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InputField label="Host SMTP" name="smtpHost" value={formData.email.smtpHost} section="email" placeholder="smtp.example.com" />
-                    <InputField label="Porta SMTP" name="smtpPort" value={formData.email.smtpPort} section="email" placeholder="587" />
-                    <InputField label="Usuário SMTP" name="smtpUser" value={formData.email.smtpUser} section="email" placeholder="seu-email@example.com" />
-                    <InputField label="Senha SMTP" name="smtpPass" value={formData.email.smtpPass} section="email" type="password" />
+                    <InputField label="Host SMTP" name="smtpHost" value={formData.email.smtpHost} section="email" placeholder="smtp.example.com" onChange={handleInputChange} />
+                    <InputField label="Porta SMTP" name="smtpPort" value={formData.email.smtpPort} section="email" placeholder="587" onChange={handleInputChange} />
+                    <InputField label="Usuário SMTP" name="smtpUser" value={formData.email.smtpUser} section="email" placeholder="seu-email@example.com" onChange={handleInputChange} />
+                    <InputField label="Senha SMTP" name="smtpPass" value={formData.email.smtpPass} section="email" type="password" onChange={handleInputChange} />
                 </div>
                 <div className="mt-8">
-                     <TextAreaField label="Corpo do E-mail de Confirmação de Compra" name="purchaseConfirmationBody" value={formData.email.purchaseConfirmationBody} section="email" rows={10}/>
+                     <TextAreaField label="Corpo do E-mail de Confirmação de Compra" name="purchaseConfirmationBody" value={formData.email.purchaseConfirmationBody} section="email" rows={10} onChange={handleInputChange} />
                      <p className="text-xs text-gray-400 mt-2">{'Use `{{cliente}}` para o nome do cliente e `{{pedido_id}}` para o número do pedido.'}</p>
                 </div>
               </section>
@@ -546,9 +670,9 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                <section>
                 <h3 className="text-xl font-semibold text-white mb-6">Páginas de Informação</h3>
                 <div className="space-y-6">
-                    <TextAreaField label="Sobre a Loja" name="about" value={formData.infoPages.about} section="infoPages" rows={6}/>
-                    <TextAreaField label="Como Comprar" name="howToBuy" value={formData.infoPages.howToBuy} section="infoPages" rows={6}/>
-                    <TextAreaField label="Política de Devolução" name="returns" value={formData.infoPages.returns} section="infoPages" rows={6}/>
+                    <TextAreaField label="Sobre a Loja" name="about" value={formData.infoPages.about} section="infoPages" rows={6} onChange={handleInputChange} />
+                    <TextAreaField label="Como Comprar" name="howToBuy" value={formData.infoPages.howToBuy} section="infoPages" rows={6} onChange={handleInputChange} />
+                    <TextAreaField label="Política de Devolução" name="returns" value={formData.infoPages.returns} section="infoPages" rows={6} onChange={handleInputChange} />
                 </div>
               </section>
             )}
@@ -559,9 +683,9 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                 
                 <div className="space-y-6 border-b border-gray-700 pb-6 mb-6">
                   <h4 className="text-lg font-medium text-gray-200">Integrações Google</h4>
-                  <InputField label="Google Analytics ID" name="googleAnalyticsId" value={formData.seo?.googleAnalyticsId || ''} section="seo" placeholder="UA-12345678-1" />
-                  <InputField label="Google Merchant Center ID" name="googleMerchantCenterId" value={formData.seo?.googleMerchantCenterId || ''} section="seo" placeholder="123456789" />
-                  <InputField label="Google Meu Negócio" name="googleMyBusinessId" value={formData.seo?.googleMyBusinessId || ''} section="seo" placeholder="Link ou ID do perfil" />
+                  <InputField label="Google Analytics ID" name="googleAnalyticsId" value={formData.seo?.googleAnalyticsId || ''} section="seo" placeholder="UA-12345678-1" onChange={handleInputChange} />
+                  <InputField label="Google Merchant Center ID" name="googleMerchantCenterId" value={formData.seo?.googleMerchantCenterId || ''} section="seo" placeholder="123456789" onChange={handleInputChange} />
+                  <InputField label="Google Meu Negócio" name="googleMyBusinessId" value={formData.seo?.googleMyBusinessId || ''} section="seo" placeholder="Link ou ID do perfil" onChange={handleInputChange} />
                 </div>
                 
                 <div className="space-y-6 border-b border-gray-700 pb-6 mb-6">
@@ -584,7 +708,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
 
                 <div className="space-y-6">
                   <h4 className="text-lg font-medium text-gray-200">Código Personalizado no Cabeçalho</h4>
-                  <TextAreaField label="Scripts <head>" name="customHeadScript" value={formData.seo?.customHeadScript || ''} section="seo" rows={6}/>
+                  <TextAreaField label="Scripts <head>" name="customHeadScript" value={formData.seo?.customHeadScript || ''} section="seo" rows={6} onChange={handleInputChange} />
                   <p className="text-xs text-gray-400 mt-2">Use para adicionar tags de verificação, Meta Pixel, Google Tags, etc. O código será injetado antes do fechamento da tag `&lt;/head&gt;`.</p>
                 </div>
 
@@ -621,7 +745,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                         <div className="animate-fade-in">
                              <h3 className="text-xl font-semibold text-white mb-6">Conexão WhatsApp</h3>
                              <div className="space-y-6">
-                                <InputField label="Telefone Whatsapp" name="whatsappPhone" value={formData.connectivity.whatsappPhone} section="connectivity" placeholder="+55 11 99999-9999" />
+                                <InputField label="Telefone Whatsapp" name="whatsappPhone" value={formData.connectivity.whatsappPhone} section="connectivity" placeholder="+55 11 99999-9999" onChange={handleInputChange} />
                                 <div className="flex items-center justify-between bg-gray-700 p-4 rounded-lg">
                                     <span className="font-medium">Status da Conexão</span>
                                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
@@ -668,6 +792,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                                 value={formData.ai?.trainingText || ''} 
                                 section="ai" 
                                 rows={15}
+                                onChange={handleInputChange}
                             />
                         </div>
                     )}
@@ -709,10 +834,10 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                 <section>
                     <h3 className="text-xl font-semibold text-white mb-6">Redes Sociais</h3>
                      <div className="space-y-6">
-                        <InputField label="Facebook" name="facebook" value={formData.socialMedia.facebook} section="socialMedia" placeholder="https://facebook.com/sua-loja" />
-                        <InputField label="Instagram" name="instagram" value={formData.socialMedia.instagram} section="socialMedia" placeholder="https://instagram.com/sua-loja" />
-                        <InputField label="TikTok" name="tiktok" value={formData.socialMedia.tiktok} section="socialMedia" placeholder="https://tiktok.com/@sua-loja" />
-                        <InputField label="Youtube" name="youtube" value={formData.socialMedia.youtube} section="socialMedia" placeholder="https://youtube.com/c/sua-loja" />
+                        <InputField label="Facebook" name="facebook" value={formData.socialMedia.facebook} section="socialMedia" placeholder="https://facebook.com/sua-loja" onChange={handleInputChange} />
+                        <InputField label="Instagram" name="instagram" value={formData.socialMedia.instagram} section="socialMedia" placeholder="https://instagram.com/sua-loja" onChange={handleInputChange} />
+                        <InputField label="TikTok" name="tiktok" value={formData.socialMedia.tiktok} section="socialMedia" placeholder="https://tiktok.com/@sua-loja" onChange={handleInputChange} />
+                        <InputField label="Youtube" name="youtube" value={formData.socialMedia.youtube} section="socialMedia" placeholder="https://youtube.com/c/sua-loja" onChange={handleInputChange} />
                      </div>
                 </section>
             )}
@@ -721,8 +846,8 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                  <section>
                     <h3 className="text-xl font-semibold text-white mb-6">Configuração Mercado Pago</h3>
                      <div className="space-y-6">
-                        <InputField label="Public Key" name="mercadoPagoPublicKey" value={formData.integrations.mercadoPagoPublicKey} section="integrations" type="password" />
-                        <InputField label="Access Token" name="mercadoPagoToken" value={formData.integrations.mercadoPagoToken} section="integrations" type="password" />
+                        <InputField label="Public Key" name="mercadoPagoPublicKey" value={formData.integrations.mercadoPagoPublicKey} section="integrations" type="password" onChange={handleInputChange} />
+                        <InputField label="Access Token" name="mercadoPagoToken" value={formData.integrations.mercadoPagoToken} section="integrations" type="password" onChange={handleInputChange} />
                      </div>
                 </section>
             )}
@@ -731,10 +856,10 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                 <section>
                     <h3 className="text-xl font-semibold text-white mb-6">Configuração de Frete</h3>
                      <div className="space-y-6">
-                        <InputField label="Melhor Envio - Token" name="melhorEnvioToken" value={formData.shipping.melhorEnvioToken} section="shipping" type="password" />
+                        <InputField label="Melhor Envio - Token" name="melhorEnvioToken" value={formData.shipping.melhorEnvioToken} section="shipping" type="password" onChange={handleInputChange} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <InputField label="Dias Adicionais ao Prazo" name="additionalDays" value={formData.shipping.additionalDays} section="shipping" type="number" placeholder="0" />
-                            <InputField label="Valor Adicional ao Frete (R$)" name="additionalCost" value={formData.shipping.additionalCost} section="shipping" type="number" placeholder="0.00" />
+                            <InputField label="Dias Adicionais ao Prazo" name="additionalDays" value={formData.shipping.additionalDays} section="shipping" type="number" placeholder="0" onChange={handleInputChange} />
+                            <InputField label="Valor Adicional ao Frete (R$)" name="additionalCost" value={formData.shipping.additionalCost} section="shipping" type="number" placeholder="0.00" onChange={handleInputChange} />
                         </div>
 
                         <div className="border-t border-gray-700 pt-6 mt-6">
@@ -768,7 +893,129 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                 </section>
             )}
 
-            {activeTab !== 'banners' && (
+            {activeTab === 'api' && (
+              <section className="space-y-8 animate-fade-in">
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Documentação da API</h3>
+                  <p className="text-gray-400 text-sm">
+                    Utilize os endpoints abaixo para integrar sua loja virtual (frontend) ao nosso painel administrativo. 
+                    A URL base para todas as requisições é:
+                  </p>
+                  <CodeBlock code="https://bios-earned-cities-wash.trycloudflare.com" language="text" />
+                </div>
+
+                <div className="border-t border-gray-700 pt-6">
+                  <h4 className="text-lg font-medium text-primary mb-4">1. Comunicar uma Venda (Criar Pedido)</h4>
+                  <p className="text-gray-400 text-sm mb-2">
+                    Envie os dados da venda realizada na loja para registrar o pedido no painel.
+                  </p>
+                  <p className="text-sm text-gray-300 mb-1 font-mono">POST /db/loja_orders</p>
+                  <CodeBlock code={`{
+  "customer_name": "João Silva",
+  "customer_email": "joao@email.com",
+  "total": "150.00",
+  "status": "Pendente",
+  "origin": "Site",
+  "items": "[{\\"product_id\\": \\"123\\", \\"quantity\\": 1, \\"price\\": 150.00}]",
+  "store_id": "seu_store_id"
+}`} />
+                </div>
+
+                <div className="border-t border-gray-700 pt-6">
+                  <h4 className="text-lg font-medium text-primary mb-4">2. Gerenciamento de Clientes</h4>
+                  
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Cadastrar Cliente</h5>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">POST /db/loja_customers</p>
+                    <CodeBlock code={`{
+  "name": "Maria Souza",
+  "email": "maria@email.com",
+  "password": "senha_segura", 
+  "store_id": "seu_store_id"
+}`} />
+                  </div>
+
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Fazer Login (Cliente)</h5>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">GET /db/loja_customers?email=maria@email.com&password=senha_segura</p>
+                    <p className="text-xs text-gray-500 italic mb-2">Nota: Em produção, recomenda-se usar um endpoint de autenticação dedicado que retorne um token JWT.</p>
+                  </div>
+
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Editar Dados do Cliente</h5>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">PUT /db/loja_customers/:id</p>
+                    <CodeBlock code={`{
+  "name": "Maria Souza Alterada",
+  "avatar_url": "https://nova-foto.com/perfil.jpg"
+}`} />
+                  </div>
+
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Resgatar Dados Pessoais</h5>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">GET /db/loja_customers/:id</p>
+                    <p className="text-gray-400 text-sm">Retorna o objeto JSON com os dados do cliente.</p>
+                  </div>
+
+                  <div>
+                    <h5 className="text-md font-semibold text-white mb-2">Resgatar Compras do Cliente</h5>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">GET /db/loja_orders?customer_id=:id_do_cliente</p>
+                    <p className="text-gray-400 text-sm">Retorna uma lista de pedidos associados ao ID do cliente.</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-700 pt-6">
+                  <h4 className="text-lg font-medium text-primary mb-4">3. Consulta de Produtos</h4>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Utilize os parâmetros de URL para filtrar a lista de produtos.
+                  </p>
+
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Filtrar por Parte do Nome</h5>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">GET /db/loja_products?name_like=TermoBusca</p>
+                    <CodeBlock code={`GET /db/loja_products?name_like=Camiseta&store_id=seu_store_id`} language="text" />
+                  </div>
+
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Filtrar por SKU</h5>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">GET /db/loja_products?sku=CODIGO_SKU</p>
+                    <CodeBlock code={`GET /db/loja_products?sku=TS-PREM-BLK&store_id=seu_store_id`} language="text" />
+                  </div>
+
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Filtrar por Marca, Modelo ou Categoria</h5>
+                    <p className="text-gray-400 text-sm mb-2">
+                        Utilize os IDs correspondentes. Para obter os IDs, consulte as tabelas 
+                        <code className="text-primary text-xs mx-1">loja_brands</code>, 
+                        <code className="text-primary text-xs mx-1">loja_models</code> e 
+                        <code className="text-primary text-xs mx-1">loja_categories</code>.
+                    </p>
+                    <p className="text-sm text-gray-300 mb-1 font-mono">GET /db/loja_products?category_id=ID&brand_id=ID</p>
+                    <CodeBlock code={`GET /db/loja_products?category_id=cat-01&brand_id=brand-01&store_id=seu_store_id`} language="text" />
+                  </div>
+
+                  <div className="mb-6">
+                    <h5 className="text-md font-semibold text-white mb-2">Exemplo de Resposta (Produto)</h5>
+                    <CodeBlock code={`[
+  {
+    "id": "prod-001",
+    "name": "Camiseta Premium",
+    "sku": "TS-PREM",
+    "price": "129.90",
+    "stock": "50",
+    "category_id": "cat-01",
+    "brand_id": "brand-01",
+    "model_id": "model-01",
+    "description": "Descrição do produto...",
+    "status": "Ativo",
+    "media": [{"url": "...", "type": "image"}]
+  }
+]`} />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {activeTab !== 'banners' && activeTab !== 'api' && (
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
                   <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded-lg transition-colors">
                     Salvar Alterações

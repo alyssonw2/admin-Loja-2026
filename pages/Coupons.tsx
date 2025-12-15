@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Coupon, Toast } from '../types';
 import CouponModal from '../components/CouponModal';
@@ -42,8 +43,9 @@ const Coupons: React.FC<CouponsProps> = ({ coupons, addCoupon, updateCoupon, del
   
   const getDiscountDisplay = (coupon: Coupon) => {
     if (coupon.type === CouponType.FreeShipping) return 'Frete Grátis';
-    if (coupon.discountType === DiscountType.Percentage) return `${coupon.discountValue}%`;
-    if (coupon.discountType === DiscountType.FixedAmount) return `R$ ${coupon.discountValue.toFixed(2)}`;
+    const val = parseFloat(coupon.discountValue || '0');
+    if (coupon.discountType === DiscountType.Percentage) return `${val}%`;
+    if (coupon.discountType === DiscountType.FixedAmount) return `R$ ${val.toFixed(2)}`;
     return '-';
   };
 
@@ -69,23 +71,26 @@ const Coupons: React.FC<CouponsProps> = ({ coupons, addCoupon, updateCoupon, del
             </tr>
           </thead>
           <tbody>
-            {coupons.map((coupon) => (
-              <tr key={coupon.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                <td className="p-4 font-medium text-primary">{coupon.code}</td>
-                <td className="p-4 text-white">{coupon.type}</td>
-                <td className="p-4 text-white">{getDiscountDisplay(coupon)}</td>
-                <td className="p-4 text-white">{coupon.minPurchaseValue > 0 ? `R$ ${coupon.minPurchaseValue.toFixed(2)}` : '-'}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${coupon.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {coupon.isActive ? 'Ativo' : 'Inativo'}
-                  </span>
-                </td>
-                <td className="p-4 space-x-4 text-right">
-                  <button onClick={() => handleOpenModal(coupon)} className="text-blue-400 hover:text-blue-300"><PencilIcon /></button>
-                  <button onClick={() => handleDeleteCoupon(coupon)} className="text-red-400 hover:text-red-300"><TrashIcon /></button>
-                </td>
-              </tr>
-            ))}
+            {coupons.map((coupon) => {
+                const minVal = parseFloat(coupon.minPurchaseValue || '0');
+                return (
+                  <tr key={coupon.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td className="p-4 font-medium text-primary">{coupon.code}</td>
+                    <td className="p-4 text-white">{coupon.type}</td>
+                    <td className="p-4 text-white">{getDiscountDisplay(coupon)}</td>
+                    <td className="p-4 text-white">{minVal > 0 ? `R$ ${minVal.toFixed(2)}` : '-'}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${coupon.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {coupon.isActive ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+                    <td className="p-4 space-x-4 text-right">
+                      <button onClick={() => handleOpenModal(coupon)} className="text-blue-400 hover:text-blue-300"><PencilIcon /></button>
+                      <button onClick={() => handleDeleteCoupon(coupon)} className="text-red-400 hover:text-red-300"><TrashIcon /></button>
+                    </td>
+                  </tr>
+                );
+            })}
           </tbody>
         </table>
       </div>

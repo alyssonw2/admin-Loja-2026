@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { Category, Toast } from '../types';
 
@@ -32,8 +33,23 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave, 
       showToast('O nome da categoria não pode estar em branco.', 'error');
       return;
     }
+
+    let finalName = name;
+
+    // Lógica para concatenar o nome da categoria pai
+    if (parentId) {
+        const parentCategory = allCategories.find(c => c.id === parentId);
+        if (parentCategory) {
+            // Verifica se o nome já começa com o nome da categoria pai para evitar duplicação
+            // Ex: Se o pai é "Masculino" e o usuário digitou "Masculino Camiseta", não concatena novamente.
+            if (!finalName.startsWith(parentCategory.name)) {
+                finalName = `${parentCategory.name} ${finalName}`;
+            }
+        }
+    }
+
     const categoryData: Omit<Category, 'id'> = {
-      name,
+      name: finalName,
       ...(parentId && { parentId }),
     };
     onSave(category ? { ...categoryData, id: category.id } : categoryData);

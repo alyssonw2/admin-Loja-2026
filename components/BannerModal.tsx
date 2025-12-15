@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import type { Banner, Toast } from '../types';
+import { PhotographIcon, TrashIcon } from './icons/Icons';
 
 interface BannerModalProps {
   isOpen: boolean;
@@ -19,6 +21,7 @@ const initialState: Omit<Banner, 'id'> = {
 
 const BannerModal: React.FC<BannerModalProps> = ({ isOpen, onClose, onSave, banner, showToast }) => {
   const [formData, setFormData] = useState(initialState);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -35,10 +38,40 @@ const BannerModal: React.FC<BannerModalProps> = ({ isOpen, onClose, onSave, bann
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Optional: Check file size (e.g., limit to 2MB to prevent huge payloads)
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('A imagem é muito grande. O limite é 2MB.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+            setFormData(prev => ({ ...prev, imageUrl: event.target?.result as string }));
+        }
+      };
+      reader.onerror = () => {
+          showToast('Erro ao ler o arquivo.', 'error');
+      }
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+      setFormData(prev => ({ ...prev, imageUrl: '' }));
+      if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+      }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.imageUrl) {
-      showToast('Título e URL da imagem são obrigatórios.', 'error');
+      showToast('Título e Imagem são obrigatórios.', 'error');
       return;
     }
     onSave(banner ? { ...formData, id: banner.id } : formData);
@@ -54,9 +87,50 @@ const BannerModal: React.FC<BannerModalProps> = ({ isOpen, onClose, onSave, bann
         <form onSubmit={handleSubmit} className="space-y-6">
           
           <div>
-            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-300 mb-2">URL da Imagem do Banner</label>
-            <input id="imageUrl" type="text" name="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="https://exemplo.com/banner.jpg" className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" required />
-            {formData.imageUrl && <img src={formData.imageUrl} alt="Preview" className="mt-4 rounded-lg w-full h-auto max-h-48 object-cover bg-gray-700"/>}
+            <label className="block text-sm font-medium text-gray-300 mb-2">Imagem do Banner</label>
+            
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                accept="image/*" 
+                className="hidden" 
+            />
+
+            {!formData.imageUrl ? (
+                <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-gray-600 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700 hover:border-gray-500 transition-colors"
+                >
+                    <PhotographIcon className="w-12 h-12 text-gray-400 mb-2" />
+                    <span className="text-gray-300 font-medium">Clique para fazer upload da imagem</span>
+                    <span className="text-xs text-gray-500 mt-1">Recomendado: 1200x400px (JPG, PNG)</span>
+                </div>
+            ) : (
+                <div className="relative group">
+                    <img 
+                        src={formData.imageUrl} 
+                        alt="Preview" 
+                        className="w-full h-48 object-cover rounded-lg bg-gray-700 border border-gray-600"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                        <button 
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md text-sm font-medium"
+                        >
+                            Trocar
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md text-sm font-medium flex items-center"
+                        >
+                            <TrashIcon className="w-4 h-4 mr-1"/> Remover
+                        </button>
+                    </div>
+                </div>
+            )}
           </div>
 
           <div>
@@ -76,7 +150,7 @@ const BannerModal: React.FC<BannerModalProps> = ({ isOpen, onClose, onSave, bann
             </div>
             <div>
               <label htmlFor="buttonUrl" className="block text-sm font-medium text-gray-300 mb-2">URL do Botão</label>
-              <input id="buttonUrl" type="url" name="buttonUrl" value={formData.buttonUrl} onChange={handleChange} placeholder="Ex: /promocoes" className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
+              <input id="buttonUrl" type="text" name="buttonUrl" value={formData.buttonUrl} onChange={handleChange} placeholder="Ex: /promocoes" className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
           </div>
 

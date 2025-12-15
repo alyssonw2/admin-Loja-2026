@@ -1,101 +1,90 @@
 
-import { supabase } from "./supabaseClient";
+import { mockData } from '../data/mockData';
 
-// --- Chat & Messages ---
+// Mock Service for WhatsApp features
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const createInstance = (name: string) => {
     return Promise.resolve({ success: true });
 };
 
 export const listInstances = async (): Promise<{id: number, name: string, connected: boolean}[]> => {
-    // Check connection status from Store Settings
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [{ id: 1, name: 'E-connect', connected: false }];
-
-    const { data: store } = await supabase.from('stores').select('settings').eq('owner_id', user.id).single();
-    const status = store?.settings?.connectivity?.whatsappStatus === 'Conectado';
-    
-    return [{ id: 1, name: 'E-connect', connected: status }];
+    // Return a connected state based on a global variable or local storage simulation if needed.
+    // For simplicity, we assume disconnected unless connected in session.
+    // In this mock, we will check a flag in localStorage for persistence simulation across refreshes
+    const isConnected = localStorage.getItem('mock_whatsapp_connected') === 'true';
+    return [{ id: 1, name: 'E-connect', connected: isConnected }];
 };
 
 export const connectInstance = async (name: string) => {
-    // In a real app, this would trigger a QR generation on backend.
-    // Here we assume connection logic happens and we update DB.
+    await delay(1000);
+    localStorage.setItem('mock_whatsapp_connected', 'true');
     return Promise.resolve({ success: true });
 };
 
 export const getQrCode = async (name: string): Promise<{ qrCode: string | null }> => {
-    // Simulate a QR code returned from backend
-    return Promise.resolve({ qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SimulacaoConexao' });
+    // Simulate a QR code 
+    return Promise.resolve({ qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SimulacaoConexaoEconnectMock' });
 };
 
 export const disconnectInstance = async (name: string) => {
+    await delay(500);
+    localStorage.setItem('mock_whatsapp_connected', 'false');
     return Promise.resolve({ success: true });
 };
 
 export const getChats = async (instanceName: string): Promise<any[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user.id).single();
-    if(!store) return [];
-
-    const { data: chats } = await supabase.from('chats').select('*').eq('store_id', store.id).order('last_message_at', { ascending: false });
-
-    return (chats || []).map(chat => ({
+    await delay(300);
+    // Return chats from mockData
+    // We assume mockData has a chats array. Since it might not be typed fully in all contexts, we cast to any or just access it.
+    const chats = (mockData as any).chats || [];
+    return chats.map((chat: any) => ({
         id: chat.id,
-        name: chat.contact_name,
-        conversationTimestamp: new Date(chat.last_message_at).getTime() / 1000,
-        unreadCount: chat.unread_count,
-        lastMessage: { message: chat.last_message }
+        name: chat.contactName,
+        conversationTimestamp: new Date(chat.lastMessageAt).getTime() / 1000,
+        unreadCount: chat.unreadCount,
+        lastMessage: { message: chat.lastMessage }
     }));
 };
 
 export const sendMessage = async (instanceName: string, chatId: string, message: string) => {
-    // Insert message into DB
-    const { error } = await supabase.from('messages').insert({
-        chat_id: chatId,
-        sender: 'admin',
-        text: message
-    });
-    
-    if (error) throw error;
-    
-    // Update chat last message
-    await supabase.from('chats').update({
-        last_message: message,
-        last_message_at: new Date().toISOString()
-    }).eq('id', chatId);
-
+    await delay(300);
+    console.log(`Mock: Enviando mensagem para ${chatId}: ${message}`);
+    // In a full in-memory mock, we would append to mockData.messages here, 
+    // but since we are just simulating for display, returning success is enough.
     return { success: true };
 };
 
 export const getMessagesForChat = async (instanceName: string, chatId: string): Promise<any[]> => {
-    const { data: messages } = await supabase.from('messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: false });
+    await delay(300);
+    // Return messages from mockData
+    const allMessages = (mockData as any).messages || [];
+    const chatMessages = allMessages.filter((m: any) => m.chatId === chatId);
     
-    return (messages || []).map(msg => ({
+    return chatMessages.map((msg: any) => ({
         id: msg.id,
         type: msg.sender === 'admin' ? 'sent' : 'received',
         data: { message: { conversation: msg.text } },
-        created_at: msg.created_at
+        created_at: msg.createdAt
     }));
 };
 
-// --- Catalog ---
 export const getCatalog = async (instanceName: string): Promise<{id: string, name: string, price: number, imageUrl: string}[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user.id).single();
-    if(!store) return [];
-
-    // Fetch products from DB
-    const { data: products } = await supabase.from('products').select('*').eq('store_id', store.id).eq('status', 'Ativo');
-
-    return (products || []).map(p => ({
-        id: p.id,
-        name: p.name,
-        price: p.price,
-        imageUrl: p.media?.[0]?.url || 'https://via.placeholder.com/150'
-    }));
+    await delay(300);
+    // Return a few mock products
+    return [
+        {
+            id: 'prod-1',
+            name: 'Camiseta Mock WhatsApp',
+            price: 99.90,
+            imageUrl: 'https://via.placeholder.com/150'
+        },
+        {
+            id: 'prod-2',
+            name: 'Calça Mock WhatsApp',
+            price: 199.90,
+            imageUrl: 'https://via.placeholder.com/150'
+        }
+    ];
 };

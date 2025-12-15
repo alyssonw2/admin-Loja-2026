@@ -1,6 +1,9 @@
 
-
 export enum Page {
+  Landing = 'Início',
+  Register = 'Cadastro',
+  CompleteSetup = 'Concluir Configuração',
+  Login = 'Login',
   Dashboard = 'Dashboard',
   Chat = 'Chat',
   Products = 'Produtos',
@@ -14,6 +17,7 @@ export enum Page {
   Analytics = 'Análises',
   Settings = 'Configurações',
   MarketplaceMercadoLivre = 'Mercado Livre',
+  Profile = 'Meu Perfil',
 }
 
 export enum OrderStatus {
@@ -73,12 +77,19 @@ export interface ProductMedia {
   order: number;
 }
 
+export interface ProductSize {
+  name: string; // ex: "P", "M", "38", "Único"
+  quantity: number;
+}
+
 export interface Product {
   id: string;
   name: string;
   sku: string;
-  price: number;
-  stock: number;
+  price: string;
+  promotionalPrice?: string;
+  stock: string; // Represents Total Stock
+  sizes: ProductSize[]; // Breakdown of stock by size
   categoryId: string;
   brandId: string;
   modelId: string;
@@ -87,10 +98,11 @@ export interface Product {
   media: ProductMedia[];
   description: string;
   status: 'Ativo' | 'Inativo';
-  width: number;
-  height: number;
-  depth: number;
-  weight: number;
+  width: string;
+  height: string;
+  depth: string;
+  weight: string;
+  createdAt?: string;
   mercadoLivreStatus?: 'published' | 'pending' | 'error';
   mercadoLivreUrl?: string;
 }
@@ -203,6 +215,8 @@ export interface StoreSettings {
     headerTextColor: string;
     footerBackgroundColor: string;
     footerTextColor: string;
+    headingFont: string;
+    bodyFont: string;
   };
   banners: Banner[];
   infoPages: {
@@ -261,8 +275,8 @@ export interface Coupon {
     code: string;
     type: CouponType;
     discountType: DiscountType | null; 
-    discountValue: number;
-    minPurchaseValue: number;
+    discountValue: string;
+    minPurchaseValue: string;
     isActive: boolean;
 }
 
