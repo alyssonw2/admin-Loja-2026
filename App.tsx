@@ -96,7 +96,7 @@ const App: React.FC = () => {
     refreshData,
     products, addProduct, updateProduct, deleteProduct, 
     orders, updateOrder,
-    customers,
+    customers, addCustomer, // Destructure addCustomer
     kpi,
     categories, addCategory, updateCategory, deleteCategory,
     brands, addBrand, updateBrand, deleteBrand,
@@ -277,7 +277,7 @@ const App: React.FC = () => {
       case Page.Orders: return <Orders orders={orders} onViewOrder={handleViewOrder} />;
       case Page.OrderDetail: return <OrderDetail order={selectedOrder} onBack={handleBackToOrders} updateOrder={updateOrder} reviews={reviews} showToast={showToast} />;
       case Page.Coupons: return <Coupons coupons={coupons} addCoupon={addCoupon} updateCoupon={updateCoupon} deleteCoupon={deleteCoupon} showToast={showToast} />;
-      case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} />;
+      case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} showToast={showToast} />; // Pass addCustomer
       case Page.CustomerProfile: return <CustomerProfile customer={selectedCustomer} orders={orders} onBack={handleBackToCustomers} />;
       case Page.Reviews: return <Reviews reviews={reviews} addReview={addReview} updateReview={updateReview} deleteReview={deleteReview} showToast={showToast} />;
       case Page.Analytics: return <Analytics data={analyticsData} period={analyticsPeriod} setPeriod={setAnalyticsPeriod} theme={theme} />;

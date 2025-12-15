@@ -930,8 +930,21 @@ const Settings: React.FC<SettingsProps> = ({ settings, updateSettings, addBanner
                     <CodeBlock code={`{
   "name": "Maria Souza",
   "email": "maria@email.com",
-  "password": "senha_segura", 
-  "store_id": "seu_store_id"
+  "avatar_url": "https://...",
+  "cpf_cnpj": "000.000.000-00",
+  "store_id": "seu_store_id",
+  "contacts": {
+    "phone": "11999999999",
+    "whatsapp": "11999999999"
+  },
+  "addres": {
+    "street": "Rua Exemplo",
+    "number": "123",
+    "neighborhood": "Centro",
+    "city": "São Paulo",
+    "state": "SP",
+    "zipCode": "00000-000"
+  }
 }`} />
                   </div>
 

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Customer, Order } from '../types';
 import { ChevronLeftIcon, DollarSignIcon, OrderIcon, CalendarIcon } from '../components/icons/Icons';
@@ -36,7 +37,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customer, orders, onB
   }
 
   const customerOrders = orders.filter(o => o.customerName === customer.name);
-  const averageTicket = customerOrders.length > 0 ? customer.totalSpent / customerOrders.length : 0;
+  const averageTicket = customerOrders.length > 0 ? Number(customer.totalSpent) / customerOrders.length : 0;
 
   return (
     <div className="p-8 space-y-8">
@@ -55,7 +56,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customer, orders, onB
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ProfileCard title="Total Gasto" value={customer.totalSpent.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} icon={DollarSignIcon} />
+        <ProfileCard title="Total Gasto" value={Number(customer.totalSpent).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} icon={DollarSignIcon} />
         <ProfileCard title="Ticket Médio" value={averageTicket.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} icon={OrderIcon} />
         <ProfileCard title="Cliente Desde" value={new Date(customer.joinDate).toLocaleDateString('pt-BR')} icon={CalendarIcon} />
       </div>
@@ -91,7 +92,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customer, orders, onB
                     <tr key={order.id} className="border-b border-gray-700 hover:bg-gray-700/50">
                         <td className="p-3 font-medium text-primary">{order.id}</td>
                         <td className="p-3 text-gray-300">{new Date(order.date).toLocaleDateString('pt-BR')}</td>
-                        <td className="p-3 text-white">R$ {order.total.toFixed(2)}</td>
+                        <td className="p-3 text-white">R$ {Number(order.total).toFixed(2)}</td>
                         <td className="p-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColorClass(order.status)}`}>
                             {order.status}

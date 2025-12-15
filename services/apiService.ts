@@ -42,21 +42,13 @@ const REQUIRED_TABLES: TableSchema[] = [
     // --- Config Tables (Separated by Tab) ---
     { tableName: `${TABLE_PREFIX}cfg_general`, fields: { "config": "json", "store_id": "string|required" } },
     { tableName: `${TABLE_PREFIX}cfg_branding`, fields: { "config": "json", "store_id": "string|required" } },
-    // Altered to plural as requested: loja_cfg_emails
     { tableName: `${TABLE_PREFIX}cfg_emails`, fields: { "config": "json", "store_id": "string|required" } },
-    // Altered to plural as requested: loja_cfg_infos
     { tableName: `${TABLE_PREFIX}cfg_infos`, fields: { "config": "json", "store_id": "string|required" } },
-    // Altered to plural as requested: loja_cfg_seos
     { tableName: `${TABLE_PREFIX}cfg_seos`, fields: { "config": "json", "store_id": "string|required" } },
-    // Altered to plural as requested: loja_cfg_connectivities
     { tableName: `${TABLE_PREFIX}cfg_connectivities`, fields: { "config": "json", "store_id": "string|required" } },
-    // Altered to plural as requested: loja_cfg_socials
     { tableName: `${TABLE_PREFIX}cfg_socials`, fields: { "config": "json", "store_id": "string|required" } },
-    // Altered to plural as requested: loja_cfg_integrations
     { tableName: `${TABLE_PREFIX}cfg_integrations`, fields: { "config": "json", "store_id": "string|required" } },
-    // Added specific table for Mercado Pago as requested: loja_cfg_mercadopago
     { tableName: `${TABLE_PREFIX}cfg_mercadopago`, fields: { "config": "json", "store_id": "string|required" } },
-    // Altered to plural as requested: loja_cfg_shippings
     { tableName: `${TABLE_PREFIX}cfg_shippings`, fields: { "config": "json", "store_id": "string|required" } },
     { tableName: `${TABLE_PREFIX}cfg_ai`, fields: { "config": "json", "store_id": "string|required" } },
     // --- Business Data Tables ---
@@ -151,7 +143,10 @@ const REQUIRED_TABLES: TableSchema[] = [
             "join_date": "string",
             "total_spent": "string",
             "avatar_url": "string",
-            "store_id": "string|required"
+            "store_id": "string|required",
+            "cpf_cnpj": "string",
+            "addres": "json",
+            "contacts": "json"
         }
     },
     {
@@ -220,7 +215,10 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     'customers': {
         joinDate: 'join_date',
         totalSpent: 'total_spent',
-        avatarUrl: 'avatar_url'
+        avatarUrl: 'avatar_url',
+        cpfCnpj: 'cpf_cnpj',
+        address: 'addres', // Map typescript 'address' to db 'addres'
+        contacts: 'contacts'
     },
     'coupons': {
         discountType: 'discount_type',
@@ -527,12 +525,22 @@ export const db = {
             delete payload.id;
             delete payload._id;
             if (table !== 'stores' && storeId) payload.store_id = storeId;
+            
+            // --- DEBUG LOG START ---
+            console.group(`[API] Creating Record in ${TABLE_PREFIX}${table}`);
+            console.log('Original Data:', data);
+            console.log('Mapped Payload:', payload);
+            console.log('Store ID:', storeId);
+            console.groupEnd();
+            // --- DEBUG LOG END ---
+
             const res = await request<T>(`/db/${TABLE_PREFIX}${table}`, {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
             return mapFromDb(table, res);
         } catch (e) {
+            console.error(`[API] Error creating record in ${table}`, e);
             await mockDelay();
             return { ...data, id: `mock-${Date.now()}` } as T;
         }

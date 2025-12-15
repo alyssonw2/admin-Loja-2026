@@ -136,6 +136,21 @@ export interface Order {
   invoiceUrl?: string;
 }
 
+export interface CustomerAddress {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface CustomerContacts {
+  phone?: string;
+  whatsapp?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -143,6 +158,9 @@ export interface Customer {
   joinDate: string;
   totalSpent: number;
   avatarUrl: string;
+  cpfCnpj?: string;
+  address?: CustomerAddress;
+  contacts?: CustomerContacts;
 }
 
 export interface ChatConversation {

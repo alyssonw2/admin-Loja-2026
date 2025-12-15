@@ -201,8 +201,8 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
 
       const metrics = {
           sales: {
-              value: currentOrders.reduce((acc, o) => acc + o.total, 0),
-              change: calculateChange(currentOrders.reduce((acc, o) => acc + o.total, 0), prevOrders.reduce((acc, o) => acc + o.total, 0))
+              value: currentOrders.reduce((acc, o) => acc + Number(o.total), 0),
+              change: calculateChange(currentOrders.reduce((acc, o) => acc + Number(o.total), 0), prevOrders.reduce((acc, o) => acc + Number(o.total), 0))
           },
           newCustomers: {
               value: currentCustomers.length,
@@ -224,7 +224,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
       currentOrders.forEach(o => {
           const key = groupKey(new Date(o.date));
           const entry = chartMap.get(key);
-          if (entry) entry.atual += o.total;
+          if (entry) entry.atual += Number(o.total);
       });
 
       prevOrders.forEach(o => {
@@ -243,7 +243,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
              else prevKey = 'Sem 5';
           }
           const entry = chartMap.get(prevKey);
-          if (entry && entry.anterior !== undefined) entry.anterior += o.total;
+          if (entry && entry.anterior !== undefined) entry.anterior += Number(o.total);
       });
 
       const chart: AnalyticsChartDataPoint[] = chartLabels.map(label => ({
@@ -286,6 +286,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
       if (storeSettings) setStoreSettings({ ...storeSettings, banners });
   };
   const reloadReviews = async () => setReviews(await db.getAll('reviews'));
+  const reloadCustomers = async () => setCustomers(await db.getAll('customers'));
 
   // Products
   const productCrud = {
@@ -321,6 +322,25 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
             setOrders(prev => prev.map(o => o.id === item.id ? item : o));
             showToast('Pedido atualizado', 'success');
           } catch(e) { showToast('Erro ao atualizar pedido', 'error'); }
+      }
+  };
+
+  // Customers
+  const customerCrud = {
+      add: async (item: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>) => {
+          try {
+              const newItem = { 
+                  ...item, 
+                  joinDate: new Date().toISOString(),
+                  totalSpent: "0.00" // Converted to string to match DB schema
+              };
+              await db.create('customers', newItem);
+              showToast('Cliente adicionado com sucesso', 'success');
+              reloadCustomers();
+          } catch (e) {
+              console.error(e);
+              showToast('Erro ao adicionar cliente', 'error');
+          }
       }
   };
 
@@ -463,7 +483,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
   };
 
   const kpi = {
-    totalSales: orders.reduce((sum, order) => (order.status === OrderStatus.Delivered ? sum + order.total : sum), 0),
+    totalSales: orders.reduce((sum, order) => (order.status === OrderStatus.Delivered ? sum + Number(order.total) : sum), 0),
     newOrders: orders.filter(o => new Date(o.date) > new Date(new Date().setDate(new Date().getDate() - 7))).length,
     totalCustomers: customers.length,
     pendingShipments: orders.filter(o => o.status === OrderStatus.Processing).length,
@@ -474,7 +494,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
     refreshData: fetchData, // Exposed for manual reload
     products, addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.delete,
     orders, updateOrder: orderCrud.update,
-    customers,
+    customers, addCustomer: customerCrud.add, // Added addCustomer
     kpi,
     categories, addCategory: categoryCrud.add, updateCategory: categoryCrud.update, deleteCategory: categoryCrud.delete,
     brands, addBrand: brandCrud.add, updateBrand: brandCrud.update, deleteBrand: brandCrud.delete,
