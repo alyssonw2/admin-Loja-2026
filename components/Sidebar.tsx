@@ -15,7 +15,7 @@ const navItems = [
   { page: Page.Chat, icon: ChatIcon, title: 'Chat' },
   { page: Page.Products, icon: ProductIcon, title: 'Produtos' },
   { page: Page.Orders, icon: OrderIcon, title: 'Pedidos' },
-  { page: Page.AbandonedCarts, icon: ShoppingCartIcon, title: 'Carrinho Abandonado' },
+  { page: Page.AbandonedCarts, icon: ShoppingCartIcon, title: 'Carrinhos' },
   { page: Page.Coupons, icon: TicketIcon, title: 'Cupons' },
   { page: Page.Customers, icon: CustomerIcon, title: 'Clientes' },
   { page: Page.Reviews, icon: StarIcon, title: 'Avaliações' },

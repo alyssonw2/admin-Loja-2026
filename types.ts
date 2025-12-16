@@ -10,7 +10,7 @@ export enum Page {
   AddEditProduct = 'Adicionar/Editar Produto',
   Orders = 'Pedidos',
   OrderDetail = 'Detalhes do Pedido',
-  AbandonedCarts = 'Carrinho Abandonado',
+  AbandonedCarts = 'Carrinhos',
   Coupons = 'Cupons',
   Customers = 'Clientes',
   CustomerProfile = 'Perfil do Cliente',
