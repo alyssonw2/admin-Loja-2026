@@ -45,7 +45,14 @@ const ColorPicker: React.FC<{label: string, name: string, value: string, section
 const InputField: React.FC<{label: string, name: string, value: string | number, section: string, placeholder?: string, type?: string, disabled?: boolean, onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void}> = ({label, name, value, section, placeholder = '', type = 'text', disabled = false, onChange}) => (
   <div>
       <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-      <input id={name} type={type} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-600 disabled:cursor-not-allowed" />
+      <input id={name} type={type} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-600 disabled:cursor-not-allowed text-white" />
+  </div>
+);
+
+const TextAreaField: React.FC<{label: string, name: string, value: string, section: string, placeholder?: string, rows?: number, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void}> = ({label, name, value, section, placeholder = '', rows = 4, onChange}) => (
+  <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+      <textarea id={name} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} rows={rows} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white resize-none font-mono text-sm" />
   </div>
 );
 
@@ -219,6 +226,11 @@ const Settings: React.FC<SettingsProps> = ({
     showToast('Configurações salvas!', 'success');
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showToast("Copiado para a área de transferência!", "success");
+  };
+
   const tabs = [
     { id: 'loja', label: 'Loja', icon: StorefrontIcon },
     { id: 'cores', label: 'Cores e Logo', icon: PaletteIcon },
@@ -388,8 +400,6 @@ const Settings: React.FC<SettingsProps> = ({
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
                   <h3 className="text-xl font-semibold text-white mb-6">Configurações de E-mail (SMTP)</h3>
-                  <p className="text-sm text-gray-400 -mt-4">Configure seu servidor de e-mail para envio de notificações automáticas.</p>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-2">
                         <InputField label="Servidor SMTP" name="smtpHost" value={formData.email.smtpHost} section="email" placeholder="smtp.exemplo.com" onChange={handleInputChange} />
@@ -407,24 +417,79 @@ const Settings: React.FC<SettingsProps> = ({
 
                 <section className="space-y-6 pt-6 border-t border-gray-700">
                   <h3 className="text-xl font-semibold text-white mb-4">Templates de Notificação</h3>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Corpo do E-mail de Confirmação de Pedido</label>
-                    <textarea 
-                      name="purchaseConfirmationBody" 
-                      data-section="email"
-                      value={formData.email.purchaseConfirmationBody} 
-                      onChange={handleInputChange} 
-                      rows={8} 
-                      className="w-full bg-gray-700 p-3 rounded-lg border border-gray-600 text-white font-mono text-sm focus:ring-2 focus:ring-primary outline-none"
-                      placeholder="Use tags como {{cliente}} e {{pedido_id}}..."
-                    />
-                    <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{cliente}}"}</span>
-                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{pedido_id}}"}</span>
-                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{total}}"}</span>
-                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{link_pedido}}"}</span>
-                    </div>
+                  <TextAreaField label="Corpo do E-mail de Confirmação de Pedido" name="purchaseConfirmationBody" value={formData.email.purchaseConfirmationBody} section="email" rows={8} onChange={handleInputChange} />
+                </section>
+
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'info' && (
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6">Páginas Institucionais</h3>
+                  <p className="text-sm text-gray-400 -mt-4">Esses textos serão exibidos nas páginas correspondentes da sua loja online.</p>
+                  
+                  <TextAreaField label="Sobre a Loja" name="about" value={formData.infoPages.about} section="infoPages" placeholder="Conte a história da sua marca, missão e valores..." rows={8} onChange={handleInputChange} />
+                  
+                  <TextAreaField label="Como Comprar" name="howToBuy" value={formData.infoPages.howToBuy} section="infoPages" placeholder="Explique o passo a passo para o cliente realizar uma compra..." rows={6} onChange={handleInputChange} />
+                  
+                  <TextAreaField label="Trocas e Devoluções" name="returns" value={formData.infoPages.returns} section="infoPages" placeholder="Defina as regras para trocas e devoluções de produtos..." rows={6} onChange={handleInputChange} />
+                </section>
+
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'seo' && (
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6">SEO e Indexação</h3>
+                  <p className="text-sm text-gray-400 -mt-4">Configure as ferramentas de marketing e rastreamento para sua loja.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <InputField label="ID do Google Analytics" name="googleAnalyticsId" value={formData.seo.googleAnalyticsId} section="seo" placeholder="UA-XXXXXXX-X ou G-XXXXXXXX" onChange={handleInputChange} />
+                     <InputField label="ID do Google Merchant Center" name="googleMerchantCenterId" value={formData.seo.googleMerchantCenterId} section="seo" placeholder="123456789" onChange={handleInputChange} />
+                     <InputField label="ID do Google Meu Negócio" name="googleMyBusinessId" value={formData.seo.googleMyBusinessId} section="seo" placeholder="XXXXXX" onChange={handleInputChange} />
                   </div>
+                </section>
+
+                <section className="space-y-6 pt-6 border-t border-gray-700">
+                  <h3 className="text-xl font-semibold text-white mb-4">Feeds de Produtos (XML)</h3>
+                  <div className="space-y-4">
+                      <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600 flex items-center justify-between">
+                          <div>
+                              <p className="text-xs font-bold text-gray-400 uppercase mb-1">Feed para Google Shopping</p>
+                              <code className="text-sm text-primary break-all">{formData.seo.googleXmlUrl || `${formData.domain}/feed/google.xml`}</code>
+                          </div>
+                          <button type="button" onClick={() => copyToClipboard(formData.seo.googleXmlUrl || `${formData.domain}/feed/google.xml`)} className="p-2 hover:bg-gray-600 rounded-lg text-gray-300">
+                              <CodeBracketIcon className="w-5 h-5"/>
+                          </button>
+                      </div>
+
+                      <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600 flex items-center justify-between">
+                          <div>
+                              <p className="text-xs font-bold text-gray-400 uppercase mb-1">Feed para Facebook/Instagram</p>
+                              <code className="text-sm text-primary break-all">{formData.seo.facebookXmlUrl || `${formData.domain}/feed/facebook.xml`}</code>
+                          </div>
+                          <button type="button" onClick={() => copyToClipboard(formData.seo.facebookXmlUrl || `${formData.domain}/feed/facebook.xml`)} className="p-2 hover:bg-gray-600 rounded-lg text-gray-300">
+                              <CodeBracketIcon className="w-5 h-5"/>
+                          </button>
+                      </div>
+                  </div>
+                </section>
+
+                <section className="space-y-6 pt-6 border-t border-gray-700">
+                  <h3 className="text-xl font-semibold text-white mb-4">Scripts Customizados</h3>
+                  <TextAreaField label="Scripts no <head>" name="customHeadScript" value={formData.seo.customHeadScript} section="seo" placeholder="Cole aqui seus scripts do Pixel do Facebook, Google Tag Manager, etc." rows={6} onChange={handleInputChange} />
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
