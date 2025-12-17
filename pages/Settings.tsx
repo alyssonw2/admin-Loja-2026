@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { StoreSettings, Banner, Toast, WhatsAppProduct, Category, Brand, Model, Material, Color, Product } from '../types';
-import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon, ChatIcon, CheckCircleIcon } from '../components/icons/Icons';
+import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon, ChatIcon, CheckCircleIcon, ArrowRightIcon } from '../components/icons/Icons';
 import * as whatsappService from '../services/whatsappService';
 import ImportProductModal from '../components/ImportProductModal';
+import BannerModal from '../components/BannerModal';
 import { db } from '../services/apiService';
 
 interface SettingsProps {
@@ -59,10 +60,14 @@ const Settings: React.FC<SettingsProps> = ({
   const [whatsappCatalog, setWhatsappCatalog] = useState<WhatsAppProduct[]>([]);
   const [isFetchingCatalog, setIsFetchingCatalog] = useState(false);
   
+  // Modais
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedWAProduct, setSelectedWAProduct] = useState<WhatsAppProduct | null>(null);
   const [isBulkImport, setIsBulkImport] = useState(false);
   const [bulkQueue, setBulkQueue] = useState<WhatsAppProduct[]>([]);
+  
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,6 +133,27 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
+  // Funções de Banners
+  const handleOpenBannerModal = (banner: Banner | null = null) => {
+    setEditingBanner(banner);
+    setIsBannerModalOpen(true);
+  };
+
+  const handleSaveBanner = (bannerData: Banner | Omit<Banner, 'id'>) => {
+    if ('id' in bannerData) {
+        updateBanner(bannerData as Banner);
+    } else {
+        addBanner(bannerData);
+    }
+  };
+
+  const handleDeleteBanner = (id: string) => {
+    if (window.confirm("Deseja realmente excluir este banner?")) {
+        deleteBanner(id);
+    }
+  };
+
+  // WhatsApp Importation
   const handleImportSingle = (waProd: WhatsAppProduct) => {
     const existing = products.find(p => p.sku === waProd.sku);
     if (existing) {
@@ -231,22 +257,29 @@ const Settings: React.FC<SettingsProps> = ({
         </aside>
 
         <main className="flex-1">
-          <form onSubmit={handleSubmit} className="bg-gray-800 p-8 rounded-lg shadow-lg space-y-8">
+          <div className="bg-gray-800 p-8 rounded-lg shadow-lg">
             {activeTab === 'loja' && (
-              <section className="space-y-6">
-                <h3 className="text-xl font-semibold text-white mb-6">Dados da Loja</h3>
-                <InputField label="Nome da Loja" name="storeName" value={formData.storeName} section="" onChange={handleInputChange} />
-                <InputField label="Domínio" name="domain" value={formData.domain || ''} section="" placeholder="www.sualoja.com.br" onChange={handleInputChange} />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <InputField label="Cidade" name="city" value={formData.address.city} section="address" onChange={handleInputChange} />
-                   <InputField label="Estado" name="state" value={formData.address.state} section="address" onChange={handleInputChange} />
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6">Dados da Loja</h3>
+                  <InputField label="Nome da Loja" name="storeName" value={formData.storeName} section="" onChange={handleInputChange} />
+                  <InputField label="Domínio" name="domain" value={formData.domain || ''} section="" placeholder="www.sualoja.com.br" onChange={handleInputChange} />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <InputField label="Cidade" name="city" value={formData.address.city} section="address" onChange={handleInputChange} />
+                     <InputField label="Estado" name="state" value={formData.address.state} section="address" onChange={handleInputChange} />
+                  </div>
+                </section>
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
                 </div>
-              </section>
+              </form>
             )}
 
             {activeTab === 'cores' && (
-              <section className="space-y-8 animate-fade-in">
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <div>
                     <h3 className="text-xl font-semibold text-white mb-6">Identidade Visual</h3>
                     <div className="flex flex-col md:flex-row items-center gap-8 bg-gray-700/30 p-6 rounded-2xl border border-gray-600/50">
@@ -283,11 +316,127 @@ const Settings: React.FC<SettingsProps> = ({
                     <ColorPicker label="Cor do Texto" name="textColor" value={formData.branding.textColor} section="branding" onChange={handleInputChange} />
                     <ColorPicker label="Fundo do Cabeçalho" name="headerBackgroundColor" value={formData.branding.headerBackgroundColor} section="branding" onChange={handleInputChange} />
                 </div>
-              </section>
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'banners' && (
+                <section className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 className="text-xl font-semibold text-white">Gerenciar Banners</h3>
+                            <p className="text-gray-400 text-sm">Banners rotativos para a página inicial.</p>
+                        </div>
+                        <button 
+                            type="button" 
+                            onClick={() => handleOpenBannerModal()}
+                            className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20"
+                        >
+                            Adicionar Banner
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {formData.banners.length === 0 ? (
+                            <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-700 rounded-2xl bg-gray-700/20">
+                                <PhotographIcon className="w-16 h-16 mx-auto text-gray-600 mb-4" />
+                                <p className="text-gray-500 font-medium">Nenhum banner cadastrado ainda.</p>
+                            </div>
+                        ) : (
+                            formData.banners.map((banner) => (
+                                <div key={banner.id} className="bg-gray-700/50 rounded-2xl overflow-hidden border border-gray-600 flex flex-col group shadow-sm hover:shadow-xl transition-all">
+                                    <div className="relative aspect-[3/1] overflow-hidden bg-gray-900">
+                                        <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                            <button 
+                                                onClick={() => handleOpenBannerModal(banner)}
+                                                className="bg-white text-gray-900 p-2.5 rounded-full hover:bg-primary hover:text-white transition-colors"
+                                                title="Editar Banner"
+                                            >
+                                                <PencilIcon className="w-5 h-5" />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDeleteBanner(banner.id)}
+                                                className="bg-white text-red-600 p-2.5 rounded-full hover:bg-red-600 hover:text-white transition-colors"
+                                                title="Excluir Banner"
+                                            >
+                                                <TrashIcon className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 flex-1">
+                                        <h4 className="font-bold text-white text-lg truncate">{banner.title}</h4>
+                                        <p className="text-gray-400 text-xs line-clamp-2 mt-1 mb-3">{banner.description || 'Sem descrição'}</p>
+                                        {banner.buttonText && (
+                                            <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                                                {banner.buttonText} <ArrowRightIcon className="w-4 h-4" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {activeTab === 'email' && (
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6">Configurações de E-mail (SMTP)</h3>
+                  <p className="text-sm text-gray-400 -mt-4">Configure seu servidor de e-mail para envio de notificações automáticas.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-2">
+                        <InputField label="Servidor SMTP" name="smtpHost" value={formData.email.smtpHost} section="email" placeholder="smtp.exemplo.com" onChange={handleInputChange} />
+                    </div>
+                    <div>
+                        <InputField label="Porta" name="smtpPort" value={formData.email.smtpPort} section="email" placeholder="587" onChange={handleInputChange} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputField label="Usuário SMTP" name="smtpUser" value={formData.email.smtpUser} section="email" placeholder="seu-email@dominio.com" onChange={handleInputChange} />
+                    <InputField label="Senha SMTP" name="smtpPass" value={formData.email.smtpPass} section="email" type="password" placeholder="••••••••" onChange={handleInputChange} />
+                  </div>
+                </section>
+
+                <section className="space-y-6 pt-6 border-t border-gray-700">
+                  <h3 className="text-xl font-semibold text-white mb-4">Templates de Notificação</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Corpo do E-mail de Confirmação de Pedido</label>
+                    <textarea 
+                      name="purchaseConfirmationBody" 
+                      data-section="email"
+                      value={formData.email.purchaseConfirmationBody} 
+                      onChange={handleInputChange} 
+                      rows={8} 
+                      className="w-full bg-gray-700 p-3 rounded-lg border border-gray-600 text-white font-mono text-sm focus:ring-2 focus:ring-primary outline-none"
+                      placeholder="Use tags como {{cliente}} e {{pedido_id}}..."
+                    />
+                    <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
+                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{cliente}}"}</span>
+                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{pedido_id}}"}</span>
+                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{total}}"}</span>
+                        <span className="bg-gray-700 text-xs px-2 py-1 rounded text-primary border border-primary/30 whitespace-nowrap">{"{{link_pedido}}"}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
             )}
 
             {activeTab === 'conectividade' && (
-                <section>
+                <section className="animate-fade-in">
                     <div className="flex space-x-1 bg-gray-700 p-1 rounded-lg mb-6 w-fit">
                          {['conexao', 'treinamento', 'catalogo'].map(t => (
                              <button key={t} type="button" onClick={() => setConnectivityTab(t as any)} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${connectivityTab === t ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>
@@ -297,7 +446,7 @@ const Settings: React.FC<SettingsProps> = ({
                     </div>
 
                     {connectivityTab === 'conexao' && (
-                        <div className="space-y-6 animate-fade-in">
+                        <div className="space-y-6">
                              <InputField label="Telefone Whatsapp" name="whatsappPhone" value={formData.connectivity.whatsappPhone} section="connectivity" placeholder="Ex: 5511999999999" onChange={handleInputChange} />
                              <div className="flex items-center justify-between bg-gray-700 p-4 rounded-lg">
                                 <span className="font-medium">Status</span>
@@ -305,6 +454,11 @@ const Settings: React.FC<SettingsProps> = ({
                                     {connectionStatus}
                                 </span>
                              </div>
+                             <div className="border-t border-gray-700 pt-6 flex justify-end">
+                                <button onClick={handleSubmit} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                                    Salvar Alterações
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -367,15 +521,7 @@ const Settings: React.FC<SettingsProps> = ({
                     )}
                 </section>
             )}
-
-            {activeTab !== 'banners' && activeTab !== 'api' && (
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                  <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95">
-                    Salvar Alterações
-                  </button>
-                </div>
-            )}
-          </form>
+          </div>
         </main>
       </div>
 
@@ -391,6 +537,14 @@ const Settings: React.FC<SettingsProps> = ({
         colors={colors}
         showToast={showToast}
         isUpdate={products.some(p => p.sku === selectedWAProduct?.sku)}
+      />
+
+      <BannerModal
+        isOpen={isBannerModalOpen}
+        onClose={() => setIsBannerModalOpen(false)}
+        onSave={handleSaveBanner}
+        banner={editingBanner}
+        showToast={showToast}
       />
     </div>
   );
