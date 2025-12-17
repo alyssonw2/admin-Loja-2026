@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { Order } from '../types';
 import { OrderStatus, OrderOrigin } from '../types';
@@ -132,7 +133,7 @@ const Orders: React.FC<OrdersProps> = ({ orders, onViewOrder }) => {
                     <td className="p-4 text-gray-900 dark:text-white">{order.customerName}</td>
                     <td className="p-4 text-gray-500 dark:text-gray-400">{new Date(order.date).toLocaleDateString('pt-BR')}</td>
                     <td className="p-4">{getOriginIcon(order.origin)}</td>
-                    <td className="p-4 text-gray-900 dark:text-white">R$ {order.total.toFixed(2)}</td>
+                    <td className="p-4 text-gray-900 dark:text-white">R$ {Number(order.total).toFixed(2)}</td>
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColorClass(order.status)}`}>
                         {order.status}

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Order } from '../types';
 import { getStatusColorClass, getOriginIcon } from '../utils/helpers';
@@ -27,7 +28,7 @@ const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({ orders }) => {
                 <td className="p-3 font-medium text-primary">{order.id}</td>
                 <td className="p-3 text-gray-900 dark:text-white">{order.customerName}</td>
                 <td className="p-3">{getOriginIcon(order.origin)}</td>
-                <td className="p-3 text-gray-900 dark:text-white">R$ {order.total.toFixed(2)}</td>
+                <td className="p-3 text-gray-900 dark:text-white">R$ {Number(order.total).toFixed(2)}</td>
                 <td className="p-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColorClass(order.status)}`}>
                     {order.status}

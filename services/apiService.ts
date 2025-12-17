@@ -2,7 +2,7 @@
 import type { User, StoreSettings } from "../types";
 import { mockData } from '../data/mockData';
 
-const API_URL = "https://pills-analyze-chemicals-pci.trycloudflare.com";
+const API_URL = "https://crafts-house-dominant-fixes.trycloudflare.com";
 const ADMIN_EMAIL = "";
 const ADMIN_PASS = "";
 const TABLE_PREFIX = "loja_";

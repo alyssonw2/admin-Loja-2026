@@ -11,7 +11,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, showToast }) => {
-  const [email, setEmail] = useState('admin@admin.com');
+  const [email, setEmail] = useState('admin@econnect.com');
   const [password, setPassword] = useState('123'); 
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +79,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
-              placeholder="admin@admin.com"
+              placeholder="admin@econnect.com"
             />
           </div>
           <div>
@@ -122,7 +122,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all transform hover:scale-[1.01]"
+              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all transform hover:scale-[1.01]"
             >
               {isLoading ? 'Entrando...' : 'Entrar na Loja'}
               {!isLoading && <ArrowRightIcon className="w-5 h-5" />}

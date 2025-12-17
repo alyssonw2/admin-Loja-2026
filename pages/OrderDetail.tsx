@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 // FIX: Added Toast to the import.
 import type { Order, Review, OrderEvent, Toast } from '../types';
@@ -99,14 +100,14 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
                     <p className="font-semibold text-white">{item.productName}</p>
                     <p className="text-sm text-gray-400">Qtd: {item.quantity}</p>
                   </div>
-                  <p className="font-semibold text-white">R$ {(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="font-semibold text-white">R$ {(Number(item.price) * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
             <div className="border-t border-gray-700 mt-4 pt-4 flex justify-end">
                 <div className="text-lg">
                     <span className="font-bold text-gray-300">Total do Pedido: </span>
-                    <span className="font-bold text-primary">R$ {order.total.toFixed(2)}</span>
+                    <span className="font-bold text-primary">R$ {Number(order.total).toFixed(2)}</span>
                 </div>
             </div>
           </div>
