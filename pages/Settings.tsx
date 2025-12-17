@@ -13,7 +13,6 @@ interface SettingsProps {
   updateBanner: (banner: Banner) => void;
   deleteBanner: (bannerId: string) => void;
   showToast: (message: string, type: Toast['type']) => void;
-  // Novos props necessários para a importação
   categories: Category[];
   brands: Brand[];
   models: Model[];
@@ -23,6 +22,24 @@ interface SettingsProps {
   addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (p: Product) => Promise<void>;
 }
+
+const ColorPicker: React.FC<{label: string, name: string, value: string, section: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({label, name, value, section, onChange}) => (
+  <div className="flex items-center justify-between bg-gray-700/50 p-4 rounded-xl border border-gray-600/50">
+      <label htmlFor={name} className="text-sm font-medium text-gray-200">{label}</label>
+      <div className="flex items-center gap-3">
+          <span className="text-xs font-mono text-gray-400">{value.toUpperCase()}</span>
+          <input 
+            id={name} 
+            type="color" 
+            name={name} 
+            data-section={section} 
+            value={value} 
+            onChange={onChange} 
+            className="w-10 h-10 rounded-lg bg-transparent border-none cursor-pointer p-0" 
+          />
+      </div>
+  </div>
+);
 
 const InputField: React.FC<{label: string, name: string, value: string | number, section: string, placeholder?: string, type?: string, disabled?: boolean, onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void}> = ({label, name, value, section, placeholder = '', type = 'text', disabled = false, onChange}) => (
   <div>
@@ -38,17 +55,16 @@ const Settings: React.FC<SettingsProps> = ({
   const [activeTab, setActiveTab] = useState('loja');
   const [connectivityTab, setConnectivityTab] = useState<'conexao' | 'treinamento' | 'catalogo'>('conexao');
   const [formData, setFormData] = useState<StoreSettings>({ ...settings, banners: settings.banners || [] });
-  const [qrCode, setQrCode] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<StoreSettings['connectivity']['whatsappStatus']>(settings.connectivity.whatsappStatus);
-  const [isLoading, setIsLoading] = useState(false);
   const [whatsappCatalog, setWhatsappCatalog] = useState<WhatsAppProduct[]>([]);
   const [isFetchingCatalog, setIsFetchingCatalog] = useState(false);
   
-  // Estados para importação
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedWAProduct, setSelectedWAProduct] = useState<WhatsAppProduct | null>(null);
   const [isBulkImport, setIsBulkImport] = useState(false);
   const [bulkQueue, setBulkQueue] = useState<WhatsAppProduct[]>([]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const instanceName = formData.connectivity.whatsappPhone || "default_store";
 
@@ -83,17 +99,38 @@ const Settings: React.FC<SettingsProps> = ({
     const section = dataset.section as keyof StoreSettings | undefined;
     let processedValue: string | number = value;
     if (type === 'number') processedValue = value === '' ? 0 : Number(value);
+    
     if (section) {
-      setFormData(prev => ({ ...prev, [section]: { ...(prev[section] as object), [name]: processedValue } }));
+      setFormData(prev => ({ 
+        ...prev, 
+        [section]: { 
+          ...(prev[section] as object), 
+          [name]: processedValue 
+        } 
+      }));
     } else {
       setFormData(prev => ({ ...prev, [name]: processedValue }));
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                setFormData(prev => ({
+                    ...prev,
+                    branding: { ...prev.branding, logoUrl: event.target?.result as string }
+                }));
+            }
+        };
+        reader.readAsDataURL(e.target.files[0]);
     }
   };
 
   const handleImportSingle = (waProd: WhatsAppProduct) => {
     const existing = products.find(p => p.sku === waProd.sku);
     if (existing) {
-        // Se já existe, atualizamos os dados básicos imediatamente
         const updated = {
             ...existing,
             name: waProd.name,
@@ -112,7 +149,6 @@ const Settings: React.FC<SettingsProps> = ({
     const toImport = whatsappCatalog.filter(wa => !products.some(p => p.sku === wa.sku));
     const toUpdate = whatsappCatalog.filter(wa => products.some(p => p.sku === wa.sku));
 
-    // Atualiza quem já existe
     for (const wa of toUpdate) {
         const existing = products.find(p => p.sku === wa.sku)!;
         await updateProduct({
@@ -201,6 +237,52 @@ const Settings: React.FC<SettingsProps> = ({
                 <h3 className="text-xl font-semibold text-white mb-6">Dados da Loja</h3>
                 <InputField label="Nome da Loja" name="storeName" value={formData.storeName} section="" onChange={handleInputChange} />
                 <InputField label="Domínio" name="domain" value={formData.domain || ''} section="" placeholder="www.sualoja.com.br" onChange={handleInputChange} />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <InputField label="Cidade" name="city" value={formData.address.city} section="address" onChange={handleInputChange} />
+                   <InputField label="Estado" name="state" value={formData.address.state} section="address" onChange={handleInputChange} />
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'cores' && (
+              <section className="space-y-8 animate-fade-in">
+                <div>
+                    <h3 className="text-xl font-semibold text-white mb-6">Identidade Visual</h3>
+                    <div className="flex flex-col md:flex-row items-center gap-8 bg-gray-700/30 p-6 rounded-2xl border border-gray-600/50">
+                        <div className="relative group">
+                            <div className="w-40 h-40 bg-gray-700 rounded-2xl overflow-hidden border-2 border-dashed border-gray-500 flex items-center justify-center">
+                                {formData.branding.logoUrl ? (
+                                    <img src={formData.branding.logoUrl} className="max-w-full max-h-full object-contain p-2" />
+                                ) : (
+                                    <PhotographIcon className="w-12 h-12 text-gray-500" />
+                                )}
+                            </div>
+                            <button 
+                                type="button" 
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold rounded-2xl"
+                            >
+                                Alterar Logo
+                            </button>
+                            <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                            <h4 className="font-bold text-gray-200">Logo da Loja</h4>
+                            <p className="text-sm text-gray-400">Recomendamos imagens em PNG com fundo transparente. Tamanho ideal: 400x400px.</p>
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="text-primary hover:text-primary-light text-sm font-bold">Enviar novo arquivo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ColorPicker label="Cor Primária" name="primaryColor" value={formData.branding.primaryColor} section="branding" onChange={handleInputChange} />
+                    <ColorPicker label="Cor Secundária" name="secondaryColor" value={formData.branding.secondaryColor} section="branding" onChange={handleInputChange} />
+                    <ColorPicker label="Cor de Destaque" name="accentColor" value={formData.branding.accentColor} section="branding" onChange={handleInputChange} />
+                    <ColorPicker label="Fundo da Página" name="backgroundColor" value={formData.branding.backgroundColor} section="branding" onChange={handleInputChange} />
+                    <ColorPicker label="Cor do Texto" name="textColor" value={formData.branding.textColor} section="branding" onChange={handleInputChange} />
+                    <ColorPicker label="Fundo do Cabeçalho" name="headerBackgroundColor" value={formData.branding.headerBackgroundColor} section="branding" onChange={handleInputChange} />
+                </div>
               </section>
             )}
 
@@ -286,9 +368,11 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
             )}
 
-            {activeTab !== 'banners' && activeTab !== 'api' && activeTab !== 'conectividade' && (
+            {activeTab !== 'banners' && activeTab !== 'api' && (
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                  <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded-lg">Salvar Alterações</button>
+                  <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95">
+                    Salvar Alterações
+                  </button>
                 </div>
             )}
           </form>

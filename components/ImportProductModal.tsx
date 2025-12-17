@@ -30,9 +30,14 @@ const ImportProductModal: React.FC<ImportProductModalProps> = ({
         ...prev,
         name: waProduct.name || '',
         sku: waProduct.sku || '',
+        // O preço já vem dividido por 100 do serviço
         price: waProduct.price?.toString() || '',
         description: waProduct.description || '',
-        media: waProduct.imageUrl ? [{ id: 'wa-img', url: waProduct.imageUrl, type: 'image', order: 1 }] : []
+        media: waProduct.imageUrl ? [{ id: 'wa-img', url: waProduct.imageUrl, type: 'image', order: 1 }] : [],
+        // Garantindo que os campos técnicos comecem vazios para seleção obrigatória ou manual
+        modelId: '',
+        materialId: '',
+        colorId: ''
       }));
     }
   }, [waProduct, isOpen]);
@@ -48,6 +53,11 @@ const ImportProductModal: React.FC<ImportProductModalProps> = ({
       showToast("Selecione uma categoria para o produto.", "error");
       return;
     }
+    // Opcional: Validar se campos de moda foram preenchidos
+    if (!formData.modelId || !formData.materialId || !formData.colorId) {
+        showToast("Por favor, preencha Modelo, Material e Cor para manter o padrão do catálogo.", "info");
+    }
+
     onSave(formData);
     onClose();
   };
@@ -75,7 +85,7 @@ const ImportProductModal: React.FC<ImportProductModalProps> = ({
                    <img src={waProduct.imageUrl} className="w-24 h-24 rounded-lg object-cover bg-gray-600" />
                    <div>
                       <p className="font-bold">{waProduct.name}</p>
-                      <p className="text-primary font-bold text-lg">R$ {waProduct.price.toFixed(2)}</p>
+                      <p className="text-primary font-bold text-lg">R$ {Number(waProduct.price).toFixed(2)}</p>
                       <p className="text-xs text-gray-400">SKU: {waProduct.sku || 'N/A'}</p>
                    </div>
                 </div>

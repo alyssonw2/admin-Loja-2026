@@ -72,17 +72,16 @@ export const getCatalog = async (instanceName: string): Promise<any[]> => {
         console.log(`[WhatsApp API] Solicitando catálogo para a instância: ${instanceName}`);
         const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/catalog`)
         const data = await response.json();
-        console.log(response)
         
-        // Exibição obrigatória no console conforme solicitado
         console.log(`[WhatsApp API] Resposta bruta do catálogo:`, data);
 
         if (data.success && data.catalog && data.catalog.products) {
             return data.catalog.products.map((p: any) => ({
                 id: p.id,
                 name: p.name,
-                // O preço vem como inteiro (centavos), ex: 1250000 -> 12500.00
-                price: Number(p.price) / 100,
+                // O preço vem como inteiro (centavos), ex: 12500 -> 125.00
+                // Dividimos por 100 conforme solicitado para ficar em Reais
+                price: parseFloat((Number(p.price) / 100).toFixed(2)),
                 imageUrl: p.imageUrls?.original || p.imageUrls?.requested,
                 description: p.description,
                 sku: p.retailerId
