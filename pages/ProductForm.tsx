@@ -64,6 +64,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
       if (formData.sizes && formData.sizes.length > 0) {
           const total = formData.sizes.reduce((acc, curr) => acc + curr.quantity, 0);
           setFormData(prev => ({ ...prev, stock: total.toString() }));
+      } else {
+          setFormData(prev => ({ ...prev, stock: '0' }));
       }
   }, [formData.sizes]);
 
@@ -90,10 +92,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
           showToast('Tamanho já adicionado.', 'error');
           return;
       }
-      const newSize: ProductSize = { name: newSizeName, quantity: newSizeQuantity };
+      const newSize: ProductSize = { name: newSizeName.toUpperCase(), quantity: newSizeQuantity };
       setFormData(prev => ({ ...prev, sizes: [...prev.sizes, newSize] }));
       setNewSizeName('');
       setNewSizeQuantity(0);
+  };
+
+  const handleRemoveSize = (index: number) => {
+      setFormData(prev => ({
+          ...prev,
+          sizes: prev.sizes.filter((_, i) => i !== index)
+      }));
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -248,17 +257,42 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
           <fieldset className="border border-gray-700 p-4 rounded-lg">
             <legend className="px-2 text-lg font-semibold text-gray-300">Tamanhos e Detalhes</legend>
             <div className="pt-4 space-y-6">
-                <div className="flex gap-2 items-end bg-gray-700/30 p-3 rounded-lg">
-                    <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-400 mb-1">Tamanho</label>
-                        <input type="text" value={newSizeName} onChange={(e) => setNewSizeName(e.target.value)} placeholder="Ex: M, 42" className="bg-gray-700 p-2 rounded-md w-full text-sm outline-none" />
+                <div className="space-y-4">
+                    <div className="flex gap-2 items-end bg-gray-700/30 p-3 rounded-lg">
+                        <div className="flex-1">
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Tamanho</label>
+                            <input type="text" value={newSizeName} onChange={(e) => setNewSizeName(e.target.value)} placeholder="Ex: P, M, 42" className="bg-gray-700 p-2 rounded-md w-full text-sm outline-none" />
+                        </div>
+                        <div className="w-24">
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Qtd</label>
+                            <input type="number" value={newSizeQuantity} onChange={(e) => setNewSizeQuantity(Number(e.target.value))} className="bg-gray-700 p-2 rounded-md w-full text-sm outline-none" />
+                        </div>
+                        <button type="button" onClick={handleAddSize} className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-md text-sm font-bold transition-colors">Adicionar Tamanho</button>
                     </div>
-                    <div className="w-24">
-                        <label className="block text-xs font-medium text-gray-400 mb-1">Qtd</label>
-                        <input type="number" value={newSizeQuantity} onChange={(e) => setNewSizeQuantity(Number(e.target.value))} className="bg-gray-700 p-2 rounded-md w-full text-sm outline-none" />
+
+                    {/* Lista de Tamanhos Registrados */}
+                    {formData.sizes.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                            {formData.sizes.map((size, index) => (
+                                <div key={index} className="bg-gray-700 border border-gray-600 rounded-lg p-2 flex flex-col items-center relative group">
+                                    <span className="text-xs font-bold text-primary">{size.name}</span>
+                                    <span className="text-sm font-medium">{size.quantity} un.</span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => handleRemoveSize(index)}
+                                        className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <TrashIcon className="w-3 h-3"/>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <div className="text-right">
+                        <p className="text-xs text-gray-500">Estoque Total calculado: <span className="font-bold text-white">{formData.stock}</span></p>
                     </div>
-                    <button type="button" onClick={handleAddSize} className="bg-primary px-4 py-2 rounded-md text-sm font-bold">Add</button>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Categoria</label>
@@ -279,8 +313,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
           </fieldset>
           
           <div className="flex justify-end space-x-4">
-            <button type="button" onClick={onBack} className="bg-gray-600 px-6 py-2 rounded-md font-bold">Cancelar</button>
-            <button type="submit" className="bg-primary px-8 py-2 rounded-md font-bold">Salvar</button>
+            <button type="button" onClick={onBack} className="bg-gray-600 px-6 py-2 rounded-md font-bold hover:bg-gray-500 transition-colors">Cancelar</button>
+            <button type="submit" className="bg-primary px-8 py-2 rounded-md font-bold hover:bg-primary-dark transition-colors">Salvar Produto</button>
           </div>
         </form>
       </div>

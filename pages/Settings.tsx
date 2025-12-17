@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { StoreSettings, Banner, Toast, WhatsAppProduct, Category, Brand, Model, Material, Color, Product } from '../types';
-import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon, ChatIcon, CheckCircleIcon, ArrowRightIcon } from '../components/icons/Icons';
+import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon, ChatIcon, CheckCircleIcon, ArrowRightIcon, CpuChipIcon } from '../components/icons/Icons';
 import * as whatsappService from '../services/whatsappService';
 import ImportProductModal from '../components/ImportProductModal';
 import BannerModal from '../components/BannerModal';
@@ -23,6 +23,19 @@ interface SettingsProps {
   addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (p: Product) => Promise<void>;
 }
+
+const FONT_OPTIONS = [
+    "Inter",
+    "Raleway",
+    "Open Sans",
+    "Montserrat",
+    "Roboto",
+    "Poppins",
+    "Lato",
+    "Playfair Display",
+    "Oswald",
+    "Nunito"
+];
 
 const ColorPicker: React.FC<{label: string, name: string, value: string, section: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({label, name, value, section, onChange}) => (
   <div className="flex items-center justify-between bg-gray-700/50 p-4 rounded-xl border border-gray-600/50">
@@ -109,20 +122,39 @@ const Settings: React.FC<SettingsProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, dataset, type } = e.target;
     const section = dataset.section as keyof StoreSettings | undefined;
-    let processedValue: string | number = value;
-    if (type === 'number') processedValue = value === '' ? 0 : Number(value);
     
-    if (section) {
-      setFormData(prev => ({ 
-        ...prev, 
-        [section]: { 
-          ...(prev[section] as object), 
-          [name]: processedValue 
-        } 
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: processedValue }));
-    }
+    setFormData(prev => {
+        if (section) {
+            let processedValue: any = value;
+            if (type === 'number') processedValue = value === '' ? 0 : Number(value);
+            if (type === 'checkbox') processedValue = (e.target as HTMLInputElement).checked;
+
+            // Handle nested objects like freeShippingPolicy
+            if (name.includes('.')) {
+                const [parent, child] = name.split('.');
+                return {
+                    ...prev,
+                    [section]: {
+                        ...(prev[section] as any),
+                        [parent]: {
+                            ...(prev[section] as any)[parent],
+                            [child]: processedValue
+                        }
+                    }
+                };
+            }
+
+            return { 
+                ...prev, 
+                [section]: { 
+                    ...(prev[section] as object), 
+                    [name]: processedValue 
+                } 
+            };
+        } else {
+            return { ...prev, [name]: value };
+        }
+    });
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,7 +274,7 @@ const Settings: React.FC<SettingsProps> = ({
     { id: 'redes', label: 'Redes Sociais', icon: ShareIcon },
     { id: 'pagamento', label: 'Mercado Pago', icon: CreditCardIcon },
     { id: 'frete', label: 'Frete', icon: TruckIcon },
-    { id: 'api', label: 'API / Integração', icon: CodeBracketIcon },
+    { id: 'api', label: 'API / IA', icon: CodeBracketIcon },
   ];
 
   const getStatusColor = (status: string) => {
@@ -328,6 +360,39 @@ const Settings: React.FC<SettingsProps> = ({
                     <ColorPicker label="Cor do Texto" name="textColor" value={formData.branding.textColor} section="branding" onChange={handleInputChange} />
                     <ColorPicker label="Fundo do Cabeçalho" name="headerBackgroundColor" value={formData.branding.headerBackgroundColor} section="branding" onChange={handleInputChange} />
                 </div>
+
+                <section className="space-y-6 pt-6 border-t border-gray-700">
+                    <h3 className="text-xl font-semibold text-white mb-4">Tipografia</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label htmlFor="headingFont" className="block text-sm font-medium text-gray-300 mb-2">Fonte para Títulos</label>
+                            <select 
+                                id="headingFont" 
+                                name="headingFont" 
+                                data-section="branding" 
+                                value={formData.branding.headingFont} 
+                                onChange={handleInputChange}
+                                className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white"
+                            >
+                                {FONT_OPTIONS.map(font => <option key={font} value={font}>{font}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="bodyFont" className="block text-sm font-medium text-gray-300 mb-2">Fonte para o Corpo</label>
+                            <select 
+                                id="bodyFont" 
+                                name="bodyFont" 
+                                data-section="branding" 
+                                value={formData.branding.bodyFont} 
+                                onChange={handleInputChange}
+                                className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white"
+                            >
+                                {FONT_OPTIONS.map(font => <option key={font} value={font}>{font}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
                     <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
                         Salvar Alterações
@@ -585,6 +650,121 @@ const Settings: React.FC<SettingsProps> = ({
                         </div>
                     )}
                 </section>
+            )}
+
+            {activeTab === 'redes' && (
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6">Redes Sociais</h3>
+                  <p className="text-sm text-gray-400 -mt-4">Insira o link completo dos perfis da sua loja.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputField label="Instagram" name="instagram" value={formData.socialMedia.instagram} section="socialMedia" placeholder="https://instagram.com/sualoja" onChange={handleInputChange} />
+                    <InputField label="Facebook" name="facebook" value={formData.socialMedia.facebook} section="socialMedia" placeholder="https://facebook.com/sualoja" onChange={handleInputChange} />
+                    <InputField label="TikTok" name="tiktok" value={formData.socialMedia.tiktok} section="socialMedia" placeholder="https://tiktok.com/@sualoja" onChange={handleInputChange} />
+                    <InputField label="YouTube" name="youtube" value={formData.socialMedia.youtube} section="socialMedia" placeholder="https://youtube.com/c/sualoja" onChange={handleInputChange} />
+                  </div>
+                </section>
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'pagamento' && (
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6">Integração Mercado Pago</h3>
+                  <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex gap-4">
+                    <div className="p-2 bg-blue-500 rounded-lg h-fit"><CreditCardIcon className="w-6 h-6 text-white"/></div>
+                    <div className="text-sm">
+                      <h4 className="font-bold text-blue-400">Como obter suas chaves?</h4>
+                      <p className="text-gray-400 mt-1">Acesse o <a href="https://developers.mercadopago.com/panel" target="_blank" className="text-blue-400 hover:underline">Painel do Desenvolvedor</a>, crie uma aplicação e copie suas credenciais de produção.</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <InputField label="Public Key" name="mercadoPagoPublicKey" value={formData.integrations.mercadoPagoPublicKey} section="integrations" placeholder="APP_USR-..." onChange={handleInputChange} />
+                    <InputField label="Access Token" name="mercadoPagoToken" value={formData.integrations.mercadoPagoToken} section="integrations" type="password" placeholder="APP_USR-..." onChange={handleInputChange} />
+                  </div>
+                </section>
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'frete' && (
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6">Configuração de Frete</h3>
+                  
+                  <div className="space-y-6">
+                    <InputField label="Token Melhor Envio" name="melhorEnvioToken" value={formData.shipping.melhorEnvioToken} section="shipping" type="password" placeholder="Cole seu token do Melhor Envio aqui..." onChange={handleInputChange} />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <InputField label="Dias Adicionais de Manuseio" name="additionalDays" value={formData.shipping.additionalDays} section="shipping" type="number" onChange={handleInputChange} />
+                        <InputField label="Custo Adicional Fixo (R$)" name="additionalCost" value={formData.shipping.additionalCost} section="shipping" type="number" onChange={handleInputChange} />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-6 pt-6 border-t border-gray-700">
+                  <h3 className="text-xl font-semibold text-white mb-4">Política de Frete Grátis</h3>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 bg-gray-700/50 p-4 rounded-xl border border-gray-600">
+                        <input 
+                            type="checkbox" 
+                            id="shippingEnabled" 
+                            name="freeShippingPolicy.enabled" 
+                            data-section="shipping"
+                            checked={formData.shipping.freeShippingPolicy.enabled} 
+                            onChange={handleInputChange}
+                            className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary"
+                        />
+                        <label htmlFor="shippingEnabled" className="text-sm font-medium text-gray-200">Habilitar Frete Grátis</label>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <InputField label="Valor Mínimo (R$)" name="freeShippingPolicy.minValue" value={formData.shipping.freeShippingPolicy.minValue} section="shipping" type="number" onChange={handleInputChange} />
+                        <InputField label="Cidades Exclusivas (Opcional)" name="freeShippingPolicy.cities" value={formData.shipping.freeShippingPolicy.cities} section="shipping" placeholder="Ex: São Paulo, Rio de Janeiro" onChange={handleInputChange} />
+                    </div>
+                  </div>
+                </section>
+
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'api' && (
+              <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
+                <section className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                    <CpuChipIcon className="text-primary"/> Assistente de IA (Gemini)
+                  </h3>
+                  <p className="text-sm text-gray-400 -mt-4">Configure o cérebro da sua loja para gerar descrições e atender clientes.</p>
+
+                  <div className="space-y-6">
+                    <InputField label="Nome do Assistente" name="assistantName" value={formData.ai.assistantName} section="ai" placeholder="Ex: VestiBot" onChange={handleInputChange} />
+                    <TextAreaField label="Texto de Treinamento / Contexto" name="trainingText" value={formData.ai.trainingText} section="ai" placeholder="Explique sobre sua marca, horários, políticas..." rows={6} onChange={handleInputChange} />
+                    <TextAreaField label="Restrições" name="restrictions" value={formData.ai.restrictions} section="ai" placeholder="O que o robô NÃO deve falar..." rows={3} onChange={handleInputChange} />
+                  </div>
+                </section>
+
+                <div className="border-t border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
+                        Salvar Alterações
+                    </button>
+                </div>
+              </form>
             )}
           </div>
         </main>
