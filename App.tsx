@@ -41,15 +41,9 @@ const App: React.FC = () => {
   
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
-      if (localStorage.getItem('theme') === 'dark') {
-        return 'dark';
-      }
-      if (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
-    } catch (e) {
-      console.warn('LocalStorage access denied');
-    }
+      if (localStorage.getItem('theme') === 'dark') return 'dark';
+      if (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    } catch (e) { console.warn('LocalStorage access denied'); }
     return 'light';
   });
 
@@ -64,9 +58,7 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
+  const toggleTheme = () => setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -121,10 +113,7 @@ const App: React.FC = () => {
     setCurrentPage(Page.Landing);
   }, []);
 
-  const handleUpdateUser = useCallback((updatedUser: User) => {
-      setCurrentUser(updatedUser);
-  }, []);
-
+  const handleUpdateUser = useCallback((updatedUser: User) => setCurrentUser(updatedUser), []);
   const handleRegisterSuccess = useCallback((storeId: number | string, zipCode: string) => {
       setPendingStoreId(storeId);
       setPendingZipCode(zipCode);
@@ -194,17 +183,6 @@ const App: React.FC = () => {
     refreshData(); 
   }, [refreshData]);
   
-  React.useEffect(() => {
-    if (selectedOrder) {
-      const updatedOrder = orders.find(o => o.id === selectedOrder.id);
-      if (updatedOrder) {
-        setSelectedOrder(updatedOrder);
-      } else {
-        handleBackToOrders();
-      }
-    }
-  }, [orders, selectedOrder, handleBackToOrders]);
-
   const LoadingScreen = ({ message }: { message: string }) => (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white animate-fade-in">
         <div className="text-center">
@@ -218,12 +196,8 @@ const App: React.FC = () => {
       </div>
   );
 
-  if (bootStatus === 'booting') {
-    return <LoadingScreen message={bootMessage} />
-  }
-
-  if (bootStatus === 'error') {
-     return (
+  if (bootStatus === 'booting') return <LoadingScreen message={bootMessage} />
+  if (bootStatus === 'error') return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white p-8">
         <div className="text-center bg-gray-800 border border-red-500/50 p-8 rounded-lg shadow-xl">
           <h1 className="text-2xl font-bold text-red-400">Erro Crítico na Inicialização</h1>
@@ -231,27 +205,14 @@ const App: React.FC = () => {
         </div>
       </div>
     );
-  }
   
   if (!currentUser) {
-      if (currentPage === Page.Login) {
-          return (
-            <Login 
-                onLoginSuccess={handleLoginSuccess} 
-                onNavigateToRegister={() => setCurrentPage(Page.Landing)}
-                showToast={showToast} 
-            />
-          );
-      }
-      if (currentPage === Page.CompleteSetup && pendingStoreId) {
-          return <CompleteSetup storeId={pendingStoreId} initialZipCode={pendingZipCode} onComplete={handleSetupComplete} showToast={showToast} />;
-      }
+      if (currentPage === Page.Login) return <Login onLoginSuccess={handleLoginSuccess} onNavigateToRegister={() => setCurrentPage(Page.Landing)} showToast={showToast} />;
+      if (currentPage === Page.CompleteSetup && pendingStoreId) return <CompleteSetup storeId={pendingStoreId} initialZipCode={pendingZipCode} onComplete={handleSetupComplete} showToast={showToast} />;
       return <Landing onNavigateToLogin={() => setCurrentPage(Page.Login)} onRegisterSuccess={handleRegisterSuccess} showToast={showToast} />;
   }
 
-  if (isDataLoading || !storeSettings) {
-     return <LoadingScreen message="Carregando dados da loja..." />
-  }
+  if (isDataLoading || !storeSettings) return <LoadingScreen message="Carregando dados da loja..." />
 
   const renderPage = () => {
     switch (currentPage) {
@@ -278,7 +239,13 @@ const App: React.FC = () => {
       case Page.Reviews: return <Reviews reviews={reviews} addReview={addReview} updateReview={updateReview} deleteReview={deleteReview} showToast={showToast} />;
       case Page.Analytics: return <Analytics data={analyticsData} period={analyticsPeriod} setPeriod={setAnalyticsPeriod} theme={theme} />;
       case Page.Settings:
-        return <Settings settings={storeSettings} updateSettings={updateStoreSettings} addBanner={addBanner} updateBanner={updateBanner} deleteBanner={deleteBanner} showToast={showToast}/>;
+        return <Settings 
+          settings={storeSettings} updateSettings={updateStoreSettings} 
+          addBanner={addBanner} updateBanner={updateBanner} deleteBanner={deleteBanner} 
+          showToast={showToast}
+          categories={categories} brands={brands} models={models} materials={materials} colors={colors}
+          products={products} addProduct={addProduct} updateProduct={updateProduct}
+        />;
       case Page.MarketplaceMercadoLivre:
         return <Marketplace settings={storeSettings} updateSettings={updateStoreSettings} products={products} updateProduct={updateProduct} showToast={showToast} />;
       case Page.Profile:
@@ -291,18 +258,9 @@ const App: React.FC = () => {
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 font-sans">
       <Sidebar currentPage={currentPage} setCurrentPage={handleNavigation} onLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
-            currentPage={currentPage} 
-            user={currentUser} 
-            onLogout={handleLogout} 
-            onNavigate={setCurrentPage}
-            theme={theme} 
-            toggleTheme={toggleTheme} 
-        />
+        <Header currentPage={currentPage} user={currentUser} onLogout={handleLogout} onNavigate={setCurrentPage} theme={theme} toggleTheme={toggleTheme} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900">
-          <div key={currentPage} className="animate-fade-in min-h-full">
-            {renderPage()}
-          </div>
+          <div key={currentPage} className="animate-fade-in min-h-full">{renderPage()}</div>
         </main>
       </div>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
