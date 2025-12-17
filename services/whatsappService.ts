@@ -1,90 +1,95 @@
 
-import { mockData } from '../data/mockData';
+const URL_BASE_WHATSAPP = "https://aaron-feeling-permit-designation.trycloudflare.com";
 
-// Mock Service for WhatsApp features
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export const createInstance = (name: string) => {
-    return Promise.resolve({ success: true });
+export const createInstance = async (name: string) => {
+    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    return response.json();
 };
 
-export const listInstances = async (): Promise<{id: number, name: string, connected: boolean}[]> => {
-    // Return a connected state based on a global variable or local storage simulation if needed.
-    // For simplicity, we assume disconnected unless connected in session.
-    // In this mock, we will check a flag in localStorage for persistence simulation across refreshes
-    const isConnected = localStorage.getItem('mock_whatsapp_connected') === 'true';
-    return [{ id: 1, name: 'E-connect', connected: isConnected }];
+export const listInstances = async (): Promise<any[]> => {
+    try {
+        const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances`);
+        return await response.json();
+    } catch (e) {
+        return [];
+    }
 };
 
 export const connectInstance = async (name: string) => {
-    await delay(1000);
-    localStorage.setItem('mock_whatsapp_connected', 'true');
-    return Promise.resolve({ success: true });
+    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${name}/connect`, {
+        method: 'POST'
+    });
+    return response.json();
 };
 
 export const getQrCode = async (name: string): Promise<{ qrCode: string | null }> => {
-    // Simulate a QR code 
-    return Promise.resolve({ qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SimulacaoConexaoEconnectMock' });
+    try {
+        const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${name}/qr`);
+        return await response.json();
+    } catch (e) {
+        return { qrCode: null };
+    }
 };
 
 export const disconnectInstance = async (name: string) => {
-    await delay(500);
-    localStorage.setItem('mock_whatsapp_connected', 'false');
-    return Promise.resolve({ success: true });
+    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${name}/disconnect`, {
+        method: 'POST'
+    });
+    return response.json();
 };
 
 export const getChats = async (instanceName: string): Promise<any[]> => {
-    await delay(300);
-    // Return chats from mockData
-    // We assume mockData has a chats array. Since it might not be typed fully in all contexts, we cast to any or just access it.
-    const chats = (mockData as any).chats || [];
-    return chats.map((chat: any) => ({
-        id: chat.id,
-        name: chat.contactName,
-        conversationTimestamp: new Date(chat.lastMessageAt).getTime() / 1000,
-        unreadCount: chat.unreadCount,
-        lastMessage: { message: chat.lastMessage }
-    }));
+    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/chats`);
+    const data = await response.json();
+    return data.chats || [];
 };
 
-export const sendMessage = async (instanceName: string, chatId: string, message: string) => {
-    await delay(300);
-    console.log(`Mock: Enviando mensagem para ${chatId}: ${message}`);
-    // In a full in-memory mock, we would append to mockData.messages here, 
-    // but since we are just simulating for display, returning success is enough.
-    return { success: true };
+export const sendMessage = async (instanceName: string, number: string, message: string) => {
+    const cleanNumber = number.split('@')[0].replace(/\D/g, '');
+    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: cleanNumber, message })
+    });
+    return response.json();
 };
 
 export const getMessagesForChat = async (instanceName: string, chatId: string): Promise<any[]> => {
-    await delay(300);
-    // Return messages from mockData
-    const allMessages = (mockData as any).messages || [];
-    const chatMessages = allMessages.filter((m: any) => m.chatId === chatId);
-    
-    return chatMessages.map((msg: any) => ({
-        id: msg.id,
-        type: msg.sender === 'admin' ? 'sent' : 'received',
-        data: { message: { conversation: msg.text } },
-        created_at: msg.createdAt
-    }));
+    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/logs?limit=50`);
+    const data = await response.json();
+    return (data.logs || []).filter((log: any) => {
+        const remoteJid = log.data?.key?.remoteJid || log.data?.message?.key?.remoteJid;
+        return remoteJid === chatId;
+    });
 };
 
-export const getCatalog = async (instanceName: string): Promise<{id: string, name: string, price: number, imageUrl: string}[]> => {
-    await delay(300);
-    // Return a few mock products
-    return [
-        {
-            id: 'prod-1',
-            name: 'Camiseta Mock WhatsApp',
-            price: 99.90,
-            imageUrl: 'https://via.placeholder.com/150'
-        },
-        {
-            id: 'prod-2',
-            name: 'Calça Mock WhatsApp',
-            price: 199.90,
-            imageUrl: 'https://via.placeholder.com/150'
+export const getCatalog = async (instanceName: string): Promise<any[]> => {
+    try {
+        console.log(`[WhatsApp API] Solicitando catálogo para a instância: ${instanceName}`);
+        const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/catalog`)
+        const data = await response.json();
+        console.log(response)
+        
+        // Exibição obrigatória no console conforme solicitado
+        console.log(`[WhatsApp API] Resposta bruta do catálogo:`, data);
+
+        if (data.success && data.catalog && data.catalog.products) {
+            return data.catalog.products.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                // O preço vem como inteiro (centavos), ex: 1250000 -> 12500.00
+                price: Number(p.price) / 100,
+                imageUrl: p.imageUrls?.original || p.imageUrls?.requested,
+                description: p.description,
+                sku: p.retailerId
+            }));
         }
-    ];
+    } catch (error) {
+        console.error("Erro ao buscar catálogo do WhatsApp:", error);
+    }
+    return [];
 };

@@ -11,6 +11,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, showToast }) => {
+  // Garantir que os dados coincidam com mockData se a API falhar
   const [email, setEmail] = useState('admin@econnect.com');
   const [password, setPassword] = useState('123'); 
   const [rememberMe, setRememberMe] = useState(false);
@@ -23,12 +24,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
     setError('');
     
     try {
-      // Pass rememberMe state to the service
       const panelUser = await apiService.loginPanelUser(email, password, rememberMe);
       showToast(`Bem-vindo, ${panelUser.name}!`, 'success');
       onLoginSuccess(panelUser);
-    } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Ocorreu um erro desconhecido.';
+    } catch (err: any) {
+        const errorMessage = err?.message || 'E-mail ou senha inválidos.';
         setError(errorMessage);
         showToast(errorMessage, 'error');
         console.error("Login process failed:", err);
@@ -39,22 +39,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
 
   return (
     <div className="min-h-screen font-sans flex flex-col relative overflow-hidden items-center justify-center p-6">
-      {/* Background Video (Consistent with Landing) */}
-      <div className="absolute inset-0 z-0">
-          <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-          >
-              <source src="/assets/background.mp4" type="video/mp4" />
-          </video>
-          {/* Overlay to ensure readability */}
-          <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90"></div>
+      <div className="absolute inset-0 z-0 bg-gray-900">
+          <div className="absolute inset-0 bg-white/5 dark:bg-gray-900/90"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+      <div className="relative z-10 w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
              <div className="bg-primary p-3 rounded-xl text-white shadow-lg">
@@ -74,12 +63,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
               id="email"
               name="email"
               type="email"
-              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
-              placeholder="admin@econnect.com"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
             />
           </div>
           <div>
@@ -93,12 +80,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
               id="password"
               name="password"
               type="password"
-              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
-              placeholder="••••••••"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
             />
           </div>
 
@@ -122,7 +107,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all transform hover:scale-[1.01]"
+              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all transform hover:scale-[1.01]"
             >
               {isLoading ? 'Entrando...' : 'Entrar na Loja'}
               {!isLoading && <ArrowRightIcon className="w-5 h-5" />}

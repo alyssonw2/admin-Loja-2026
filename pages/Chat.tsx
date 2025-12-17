@@ -1,16 +1,16 @@
+
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { ChatConversation, ChatMessage, StoreSettings, Toast } from '../types';
 import { ChatIcon } from '../components/icons/Icons';
 import * as whatsappService from '../services/whatsappService';
 
-const INSTANCE_NAME = "E-connect";
-
 interface ChatProps {
     whatsappStatus: StoreSettings['connectivity']['whatsappStatus'];
+    whatsappPhone: string;
     showToast: (message: string, type: Toast['type']) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ whatsappStatus, showToast }) => {
+const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast }) => {
     const [conversations, setConversations] = useState<ChatConversation[]>([]);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -19,15 +19,18 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, showToast }) => {
     const [newMessage, setNewMessage] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // O nome da instância é o telefone cadastrado
+    const instanceName = whatsappPhone || "default";
+
     const fetchChats = useCallback(async () => {
-        if (whatsappStatus !== 'Conectado') {
+        if (whatsappStatus !== 'Conectado' || !whatsappPhone) {
             setConversations([]);
             setIsLoading(false);
             return;
         }
         setIsLoading(true);
         try {
-            const apiChats = await whatsappService.getChats(INSTANCE_NAME);
+            const apiChats = await whatsappService.getChats(instanceName);
             const mappedChats: ChatConversation[] = apiChats.map(chat => ({
                 id: chat.id,
                 contactName: chat.name || chat.id.split('@')[0],
@@ -46,17 +49,17 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, showToast }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [whatsappStatus, selectedConversationId]);
+    }, [whatsappStatus, whatsappPhone, selectedConversationId, instanceName]);
 
     const fetchMessages = useCallback(async (chatId: string) => {
-        if (whatsappStatus !== 'Conectado') {
+        if (whatsappStatus !== 'Conectado' || !whatsappPhone) {
             setMessages([]);
             setIsLoadingMessages(false);
             return;
         }
         setIsLoadingMessages(true);
         try {
-            const logs = await whatsappService.getMessagesForChat(INSTANCE_NAME, chatId);
+            const logs = await whatsappService.getMessagesForChat(instanceName, chatId);
             const mappedMessages: ChatMessage[] = logs.map(log => ({
                 id: log.id.toString(),
                 sender: log.type === 'sent' ? 'admin' : 'user',
@@ -69,7 +72,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, showToast }) => {
         } finally {
             setIsLoadingMessages(false);
         }
-    }, [whatsappStatus]);
+    }, [whatsappStatus, whatsappPhone, instanceName]);
     
     useEffect(() => {
        fetchChats();
@@ -95,7 +98,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, showToast }) => {
     
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newMessage.trim() || !selectedConversationId) return;
+        if (!newMessage.trim() || !selectedConversationId || !whatsappPhone) return;
 
         const tempMessage: ChatMessage = {
             id: `temp-${Date.now()}`,
@@ -107,7 +110,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, showToast }) => {
         setNewMessage('');
 
         try {
-            await whatsappService.sendMessage(INSTANCE_NAME, selectedConversationId, tempMessage.text);
+            await whatsappService.sendMessage(instanceName, selectedConversationId, tempMessage.text);
             setTimeout(() => fetchMessages(selectedConversationId), 1000); 
         } catch (error) {
             console.error("Erro ao enviar mensagem:", error);
@@ -123,6 +126,9 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, showToast }) => {
         if (whatsappStatus !== 'Conectado') {
             title = "WhatsApp Desconectado";
             message = "Por favor, vá até a página de Configurações para conectar sua instância do WhatsApp.";
+        } else if (!whatsappPhone) {
+            title = "Configuração Incompleta";
+            message = "Configure o telefone do WhatsApp nas configurações para iniciar conversas.";
         } else if (isLoading) {
             title = "Carregando Conversas...";
             message = "Aguarde enquanto buscamos suas mensagens.";

@@ -38,7 +38,7 @@ export enum OrderOrigin {
 export interface User {
   id: number;
   username: string;
-  password?: string; // Should be a hash in a real app
+  password?: string;
   name: string;
   email: string;
   avatarUrl: string;
@@ -73,8 +73,8 @@ export interface Color {
 
 export interface ProductMarker {
   id: string;
-  x: number; // Percentage relative to width (0-100)
-  y: number; // Percentage relative to height (0-100)
+  x: number; // Porcentagem (0-100)
+  y: number; // Porcentagem (0-100)
   description: string;
 }
 
@@ -87,7 +87,7 @@ export interface ProductMedia {
 }
 
 export interface ProductSize {
-  name: string; // ex: "P", "M", "38", "Único"
+  name: string;
   quantity: number;
 }
 
@@ -97,8 +97,8 @@ export interface Product {
   sku: string;
   price: string;
   promotionalPrice?: string;
-  stock: string; // Represents Total Stock
-  sizes: ProductSize[]; // Breakdown of stock by size
+  stock: string;
+  sizes: ProductSize[];
   categoryId: string;
   brandId: string;
   modelId: string;
@@ -130,14 +130,14 @@ export interface Order {
   customerId: string;
   shippingAddress: string;
   date: string;
-  total: number;
+  total: number | string;
   status: OrderStatus;
   origin: OrderOrigin;
   items: {
     productId: string;
     productName: string;
     quantity: number;
-    price: number;
+    price: number | string;
     imageUrl: string;
   }[];
   gatewayTransactionId: string;
@@ -150,7 +150,7 @@ export interface CartItem {
   productId: string;
   productName: string;
   quantity: number;
-  price: number;
+  price: number | string;
   imageUrl: string;
   size?: string;
 }
@@ -161,23 +161,8 @@ export interface Cart {
   customerName: string;
   customerEmail: string;
   items: CartItem[];
-  total: number;
-  updatedAt: string; // Timestamp da última modificação
-}
-
-export interface CustomerAddress {
-  street: string;
-  number: string;
-  complement?: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-  zipCode: string;
-}
-
-export interface CustomerContacts {
-  phone?: string;
-  whatsapp?: string;
+  total: number | string;
+  updatedAt: string;
 }
 
 export interface Customer {
@@ -185,11 +170,22 @@ export interface Customer {
   name: string;
   email: string;
   joinDate: string;
-  totalSpent: number;
+  totalSpent: number | string;
   avatarUrl: string;
   cpfCnpj?: string;
-  address?: CustomerAddress;
-  contacts?: CustomerContacts;
+  address?: {
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  contacts?: {
+    phone?: string;
+    whatsapp?: string;
+  };
 }
 
 export interface ChatConversation {
@@ -215,28 +211,6 @@ export interface Banner {
   description: string;
   buttonText: string;
   buttonUrl: string;
-}
-
-interface FreeShippingPolicy {
-  enabled: boolean;
-  minValue: number;
-  cities: string;
-}
-
-interface ShippingSettings {
-  melhorEnvioToken: string;
-  additionalDays: number;
-  additionalCost: number;
-  freeShippingPolicy: FreeShippingPolicy;
-}
-
-export interface SeoSettings {
-  googleAnalyticsId: string;
-  googleMerchantCenterId: string;
-  googleMyBusinessId: string;
-  facebookXmlUrl: string;
-  googleXmlUrl: string;
-  customHeadScript: string;
 }
 
 export interface StoreSettings {
@@ -266,62 +240,33 @@ export interface StoreSettings {
     bodyFont: string;
   };
   banners: Banner[];
-  infoPages: {
-    about: string;
-    howToBuy: string;
-    returns: string;
-  };
-  email: {
-    smtpHost: string;
-    smtpPort: string;
-    smtpUser: string;
-    smtpPass: string;
-    purchaseConfirmationBody: string;
-  };
-  connectivity: {
-    whatsappPhone: string;
-    whatsappStatus: 'Conectado' | 'Desconectado' | 'Conectando';
-  };
-  socialMedia: {
-    facebook: string;
-    instagram: string;
-    tiktok: string;
-    youtube: string;
-  };
-  integrations: {
-    mercadoPagoPublicKey: string;
-    mercadoPagoToken: string;
-    mercadoLivreUser: string;
-    mercadoLivreToken: string;
-    mercadoLivreStatus: 'Conectado' | 'Desconectado' | 'Conectando';
-  };
-  shipping: ShippingSettings;
-  ai: {
-    googleAiToken: string;
-    assistantName: string;
-    restrictions: string;
-    trainingText: string;
-  };
-  seo: SeoSettings;
+  infoPages: { about: string; howToBuy: string; returns: string; };
+  email: { smtpHost: string; smtpPort: string; smtpUser: string; smtpPass: string; purchaseConfirmationBody: string; };
+  connectivity: { whatsappPhone: string; whatsappStatus: 'Conectado' | 'Desconectado' | 'Conectando'; };
+  socialMedia: { facebook: string; instagram: string; tiktok: string; youtube: string; };
+  integrations: { mercadoPagoPublicKey: string; mercadoPagoToken: string; mercadoLivreUser: string; mercadoLivreToken: string; mercadoLivreStatus: 'Conectado' | 'Desconectado' | 'Conectando'; };
+  shipping: { melhorEnvioToken: string; additionalDays: number; additionalCost: number; freeShippingPolicy: { enabled: boolean; minValue: number; cities: string; }; };
+  ai: { googleAiToken: string; assistantName: string; restrictions: string; trainingText: string; };
+  seo: { googleAnalyticsId: string; googleMerchantCenterId: string; googleMyBusinessId: string; facebookXmlUrl: string; googleXmlUrl: string; customHeadScript: string; };
 }
 
 export enum CouponType {
-    FirstPurchase = 'Primeira Compra',
-    PixDiscount = 'Desconto no PIX',
-    FreeShipping = 'Frete Grátis',
-    ProductDiscount = 'Desconto em Produto',
+  FirstPurchase = 'Primeira Compra',
+  FreeShipping = 'Frete Grátis',
+  Discount = 'Desconto',
+  PixDiscount = 'Desconto no PIX',
 }
 
 export enum DiscountType {
-    Percentage = 'Porcentagem',
-    FixedAmount = 'Valor Fixo',
+  Percentage = 'Porcentagem',
+  FixedAmount = 'Valor Fixo',
 }
 
 export interface Coupon {
     id: string;
     code: string;
-    type: CouponType;
-    discountType: DiscountType | null; 
+    type: string | CouponType;
+    discountType: string | DiscountType | null; 
     discountValue: string;
     minPurchaseValue: string;
     isActive: boolean;
@@ -331,13 +276,12 @@ export interface Review {
   id: string;
   customerName: string;
   customerPhotoUrl: string;
-  rating: number; // 1 to 5
+  rating: number;
   comment: string;
   date: string;
   orderId?: string;
 }
 
-// Analytics Types
 export enum AnalyticsPeriod {
     CURRENT_WEEK = 'Semana Atual',
     LAST_WEEK = 'Última Semana',
@@ -348,17 +292,7 @@ export enum AnalyticsPeriod {
 
 export interface Metric {
   value: number;
-  change: number; // percentage
-}
-
-export interface AnalyticsMetrics {
-  accesses: Metric;
-  sales: Metric;
-  returns: Metric;
-  newCustomers: Metric;
-  whatsappContacts: Metric;
-  couponsUsed: Metric;
-  recurringCustomers: Metric;
+  change: number;
 }
 
 export interface AnalyticsChartDataPoint {
@@ -373,7 +307,7 @@ export interface ChannelDistributionChartDataPoint {
 }
 
 export interface AnalyticsData {
-  metrics: AnalyticsMetrics;
+  metrics: { [key: string]: Metric };
   chart: AnalyticsChartDataPoint[];
   channelDistribution: ChannelDistributionChartDataPoint[];
 }
@@ -389,4 +323,6 @@ export interface WhatsAppProduct {
   name: string;
   price: number;
   imageUrl: string;
+  description?: string;
+  sku?: string;
 }

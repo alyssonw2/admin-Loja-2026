@@ -30,13 +30,12 @@ const App: React.FC = () => {
   const [bootMessage, setBootMessage] = useState('Inicializando sistema...');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const [currentPage, setCurrentPage] = useState<Page>(Page.Landing); // Landing é a inicial por padrão
+  const [currentPage, setCurrentPage] = useState<Page>(Page.Landing); 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   
-  // State for Registration Flow
   const [pendingStoreId, setPendingStoreId] = useState<number | string | null>(null);
   const [pendingZipCode, setPendingZipCode] = useState<string>('');
   
@@ -97,8 +96,8 @@ const App: React.FC = () => {
     refreshData,
     products, addProduct, updateProduct, deleteProduct, 
     orders, updateOrder,
-    customers, addCustomer, // Destructure addCustomer
-    carts, // Destructure carts
+    customers, addCustomer,
+    carts,
     kpi,
     categories, addCategory, updateCategory, deleteCategory,
     brands, addBrand, updateBrand, deleteBrand,
@@ -126,7 +125,6 @@ const App: React.FC = () => {
       setCurrentUser(updatedUser);
   }, []);
 
-  // Handlers for Registration Flow
   const handleRegisterSuccess = useCallback((storeId: number | string, zipCode: string) => {
       setPendingStoreId(storeId);
       setPendingZipCode(zipCode);
@@ -134,7 +132,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleSetupComplete = useCallback(() => {
-      // Simula o login automático após o setup completo
       const fakeUser: User = {
           id: 999,
           username: 'admin',
@@ -192,10 +189,9 @@ const App: React.FC = () => {
     handleBackToProducts();
   }, [addProduct, updateProduct, handleBackToProducts]);
 
-  // Handle sidebar navigation with data refresh
   const handleNavigation = useCallback((page: Page) => {
     setCurrentPage(page);
-    refreshData(); // Forces reload whenever a menu item is clicked
+    refreshData(); 
   }, [refreshData]);
   
   React.useEffect(() => {
@@ -237,7 +233,6 @@ const App: React.FC = () => {
     );
   }
   
-  // Roteamento para usuários NÃO autenticados
   if (!currentUser) {
       if (currentPage === Page.Login) {
           return (
@@ -251,11 +246,9 @@ const App: React.FC = () => {
       if (currentPage === Page.CompleteSetup && pendingStoreId) {
           return <CompleteSetup storeId={pendingStoreId} initialZipCode={pendingZipCode} onComplete={handleSetupComplete} showToast={showToast} />;
       }
-      // Padrão para não logados: Landing Page
       return <Landing onNavigateToLogin={() => setCurrentPage(Page.Login)} onRegisterSuccess={handleRegisterSuccess} showToast={showToast} />;
   }
 
-  // Se logado, mas carregando dados (exceto se for uma página que não precisa de dados)
   if (isDataLoading || !storeSettings) {
      return <LoadingScreen message="Carregando dados da loja..." />
   }
@@ -263,7 +256,7 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case Page.Dashboard: return <Dashboard kpi={kpi} recentOrders={orders} salesData={analyticsData.chart} theme={theme} />;
-      case Page.Chat: return <Chat whatsappStatus={storeSettings.connectivity.whatsappStatus} showToast={showToast} />;
+      case Page.Chat: return <Chat whatsappStatus={storeSettings.connectivity.whatsappStatus} whatsappPhone={storeSettings.connectivity.whatsappPhone} showToast={showToast} />;
       case Page.Products:
         return <Products 
             products={products} onAddProductClick={navigateToAddProduct} onEditProductClick={navigateToEditProduct} deleteProduct={deleteProduct}
@@ -280,7 +273,7 @@ const App: React.FC = () => {
       case Page.OrderDetail: return <OrderDetail order={selectedOrder} onBack={handleBackToOrders} updateOrder={updateOrder} reviews={reviews} showToast={showToast} />;
       case Page.AbandonedCarts: return <AbandonedCarts carts={carts} />;
       case Page.Coupons: return <Coupons coupons={coupons} addCoupon={addCoupon} updateCoupon={updateCoupon} deleteCoupon={deleteCoupon} showToast={showToast} />;
-      case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} showToast={showToast} />; // Pass addCustomer
+      case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} showToast={showToast} />;
       case Page.CustomerProfile: return <CustomerProfile customer={selectedCustomer} orders={orders} onBack={handleBackToCustomers} />;
       case Page.Reviews: return <Reviews reviews={reviews} addReview={addReview} updateReview={updateReview} deleteReview={deleteReview} showToast={showToast} />;
       case Page.Analytics: return <Analytics data={analyticsData} period={analyticsPeriod} setPeriod={setAnalyticsPeriod} theme={theme} />;
