@@ -52,7 +52,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
 
   useEffect(() => {
     if (product) {
-        setFormData({ ...product, sizes: product.sizes || [] });
+        setFormData({ ...product, sizes: product.sizes || [], promotionalPrice: product.promotionalPrice || '' });
         setMediaFiles(product.media.sort((a, b) => a.order - b.order));
     } else {
         setFormData(initialState);
@@ -199,20 +199,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                     <input id="sku" type="text" name="sku" value={formData.sku} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" required />
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
                     <label htmlFor="price" className="block text-sm font-medium text-gray-300 mb-2">Preço (R$)</label>
                     <input id="price" type="number" name="price" value={formData.price} onChange={handleChange} step="0.01" className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" required />
                     </div>
                     <div>
-                    <label htmlFor="condition" className="block text-sm font-medium text-gray-300 mb-2">Estado de Conservação</label>
+                    <label htmlFor="promotionalPrice" className="block text-sm font-medium text-gray-300 mb-2">Preço Promo. (R$)</label>
+                    <input id="promotionalPrice" type="number" name="promotionalPrice" value={formData.promotionalPrice} onChange={handleChange} step="0.01" className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+                    <div>
+                    <label htmlFor="condition" className="block text-sm font-medium text-gray-300 mb-2">Conservação</label>
                     <select id="condition" name="condition" value={formData.condition} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary">
                         <option value="Novo">Novo</option>
                         <option value="Usado">Usado</option>
                     </select>
                     </div>
                     <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-300 mb-2">Status da Loja</label>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-300 mb-2">Status Loja</label>
                     <select id="status" name="status" value={formData.status} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary">
                         <option value="Ativo">Ativo</option>
                         <option value="Inativo">Inativo</option>

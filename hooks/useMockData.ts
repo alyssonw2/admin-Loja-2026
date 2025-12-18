@@ -32,7 +32,16 @@ const DEFAULT_SETTINGS: StoreSettings = {
     email: { smtpHost: '', smtpPort: '', smtpUser: '', smtpPass: '', purchaseConfirmationBody: '' },
     connectivity: { whatsappPhone: '', whatsappStatus: 'Desconectado' },
     socialMedia: { facebook: '', instagram: '', tiktok: '', youtube: '' },
-    integrations: { mercadoPagoPublicKey: '', mercadoPagoToken: '', mercadoLivreUser: '', mercadoLivreToken: '', mercadoLivreStatus: 'Desconectado' },
+    integrations: { 
+      mercadoPagoPublicKey: '', 
+      mercadoPagoToken: '', 
+      mercadoPagoInstallmentsWithoutInterest: 3,
+      mercadoPagoInterestRate3to6: 6,
+      mercadoPagoInterestRate6to12: 12,
+      mercadoLivreUser: '', 
+      mercadoLivreToken: '', 
+      mercadoLivreStatus: 'Desconectado' 
+    },
     shipping: { melhorEnvioToken: '', additionalDays: 0, additionalCost: 0, freeShippingPolicy: { enabled: false, minValue: 0, cities: '' } },
     ai: { googleAiToken: '', assistantName: '', restrictions: '', trainingText: '' },
     seo: { googleAnalyticsId: '', googleMerchantCenterId: '', googleMyBusinessId: '', facebookXmlUrl: '', googleXmlUrl: '', customHeadScript: '' }

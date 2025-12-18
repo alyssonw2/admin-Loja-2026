@@ -644,6 +644,9 @@ export const db = {
             const defaultIntegrations = {
                 mercadoPagoPublicKey: '',
                 mercadoPagoToken: '',
+                mercadoPagoInstallmentsWithoutInterest: 3,
+                mercadoPagoInterestRate3to6: 6,
+                mercadoPagoInterestRate6to12: 12,
                 mercadoLivreUser: '',
                 mercadoLivreToken: '',
                 mercadoLivreStatus: 'Desconectado' as const
@@ -698,8 +701,22 @@ export const db = {
             console.log("Saving split configuration settings...");
 
             // Separate Mercado Pago specific settings from other integrations
-            const { mercadoPagoPublicKey, mercadoPagoToken, ...otherIntegrations } = settings.integrations;
-            const mpSettings = { mercadoPagoPublicKey, mercadoPagoToken };
+            const { 
+              mercadoPagoPublicKey, 
+              mercadoPagoToken, 
+              mercadoPagoInstallmentsWithoutInterest,
+              mercadoPagoInterestRate3to6,
+              mercadoPagoInterestRate6to12,
+              ...otherIntegrations 
+            } = settings.integrations;
+            
+            const mpSettings = { 
+              mercadoPagoPublicKey, 
+              mercadoPagoToken,
+              mercadoPagoInstallmentsWithoutInterest,
+              mercadoPagoInterestRate3to6,
+              mercadoPagoInterestRate6to12
+            };
 
             // Distribute the monolithic object into independent tables
             // 'loja_store_settings' handles the general store data

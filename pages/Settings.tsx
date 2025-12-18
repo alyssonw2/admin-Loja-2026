@@ -680,8 +680,8 @@ const Settings: React.FC<SettingsProps> = ({
                   <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex gap-4">
                     <div className="p-2 bg-blue-500 rounded-lg h-fit"><CreditCardIcon className="w-6 h-6 text-white"/></div>
                     <div className="text-sm">
-                      <h4 className="font-bold text-blue-400">Como obter suas chaves?</h4>
-                      <p className="text-gray-400 mt-1">Acesse o <a href="https://developers.mercadopago.com/panel" target="_blank" className="text-blue-400 hover:underline">Painel do Desenvolvedor</a>, crie uma aplicação e copie suas credenciais de produção.</p>
+                      <h4 className="font-bold text-blue-400">Credenciais</h4>
+                      <p className="text-gray-400 mt-1">Acesse o <a href="https://developers.mercadopago.com/panel" target="_blank" className="text-blue-400 hover:underline">Painel do Desenvolvedor</a> para obter suas chaves.</p>
                     </div>
                   </div>
 
@@ -690,6 +690,31 @@ const Settings: React.FC<SettingsProps> = ({
                     <InputField label="Access Token" name="mercadoPagoToken" value={formData.integrations.mercadoPagoToken} section="integrations" type="password" placeholder="APP_USR-..." onChange={handleInputChange} />
                   </div>
                 </section>
+
+                <section className="space-y-6 pt-6 border-t border-gray-700">
+                  <h3 className="text-xl font-semibold text-white mb-4">Configuração de Parcelamento</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Parcelas Sem Juros</label>
+                        <select 
+                          name="mercadoPagoInstallmentsWithoutInterest" 
+                          data-section="integrations" 
+                          value={formData.integrations.mercadoPagoInstallmentsWithoutInterest} 
+                          onChange={handleInputChange}
+                          className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white"
+                        >
+                          <option value={1}>À vista</option>
+                          {[2,3,4,5,6,10,12].map(num => (
+                            <option key={num} value={num}>Até {num}x sem juros</option>
+                          ))}
+                        </select>
+                    </div>
+                    <InputField label="Juros (3x a 6x) %" name="mercadoPagoInterestRate3to6" value={formData.integrations.mercadoPagoInterestRate3to6} section="integrations" type="number" onChange={handleInputChange} />
+                    <InputField label="Juros (6x a 12x) %" name="mercadoPagoInterestRate6to12" value={formData.integrations.mercadoPagoInterestRate6to12} section="integrations" type="number" onChange={handleInputChange} />
+                  </div>
+                  <p className="text-xs text-gray-500 italic">Nota: A configuração "Sem Juros" define até qual parcela a taxa será 0%. Acima disso, serão aplicadas as taxas definidas.</p>
+                </section>
+
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
                     <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
                         Salvar Alterações

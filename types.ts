@@ -244,7 +244,16 @@ export interface StoreSettings {
   email: { smtpHost: string; smtpPort: string; smtpUser: string; smtpPass: string; purchaseConfirmationBody: string; };
   connectivity: { whatsappPhone: string; whatsappStatus: 'Conectado' | 'Desconectado' | 'Conectando'; };
   socialMedia: { facebook: string; instagram: string; tiktok: string; youtube: string; };
-  integrations: { mercadoPagoPublicKey: string; mercadoPagoToken: string; mercadoLivreUser: string; mercadoLivreToken: string; mercadoLivreStatus: 'Conectado' | 'Desconectado' | 'Conectando'; };
+  integrations: { 
+    mercadoPagoPublicKey: string; 
+    mercadoPagoToken: string; 
+    mercadoPagoInstallmentsWithoutInterest: number;
+    mercadoPagoInterestRate3to6: number;
+    mercadoPagoInterestRate6to12: number;
+    mercadoLivreUser: string; 
+    mercadoLivreToken: string; 
+    mercadoLivreStatus: 'Conectado' | 'Desconectado' | 'Conectando'; 
+  };
   shipping: { melhorEnvioToken: string; additionalDays: number; additionalCost: number; freeShippingPolicy: { enabled: boolean; minValue: number; cities: string; }; };
   ai: { googleAiToken: string; assistantName: string; restrictions: string; trainingText: string; };
   seo: { googleAnalyticsId: string; googleMerchantCenterId: string; googleMyBusinessId: string; facebookXmlUrl: string; googleXmlUrl: string; customHeadScript: string; };
