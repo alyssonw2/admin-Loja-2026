@@ -25,16 +25,7 @@ interface SettingsProps {
 }
 
 const FONT_OPTIONS = [
-    "Inter",
-    "Raleway",
-    "Open Sans",
-    "Montserrat",
-    "Roboto",
-    "Poppins",
-    "Lato",
-    "Playfair Display",
-    "Oswald",
-    "Nunito"
+    "Inter", "Raleway", "Open Sans", "Montserrat", "Roboto", "Poppins", "Lato", "Playfair Display", "Oswald", "Nunito"
 ];
 
 const ColorPicker: React.FC<{label: string, name: string, value: string, section: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({label, name, value, section, onChange}) => (
@@ -79,18 +70,20 @@ const Settings: React.FC<SettingsProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<StoreSettings['connectivity']['whatsappStatus']>(settings.connectivity.whatsappStatus);
   const [whatsappCatalog, setWhatsappCatalog] = useState<WhatsAppProduct[]>([]);
   const [isFetchingCatalog, setIsFetchingCatalog] = useState(false);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Modais
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedWAProduct, setSelectedWAProduct] = useState<WhatsAppProduct | null>(null);
   const [isBulkImport, setIsBulkImport] = useState(false);
   const [bulkQueue, setBulkQueue] = useState<WhatsAppProduct[]>([]);
-  
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const pollingRef = useRef<any>(null);
+  
   const instanceName = formData.connectivity.whatsappPhone || "default_store";
 
   useEffect(() => {
@@ -99,6 +92,13 @@ const Settings: React.FC<SettingsProps> = ({
         setConnectionStatus(settings.connectivity.whatsappStatus);
     }
   }, [settings]);
+
+  // Limpa o polling ao desmontar
+  useEffect(() => {
+    return () => {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   const loadCatalog = useCallback(async () => {
     if (connectionStatus !== 'Conectado' || !formData.connectivity.whatsappPhone) return;
@@ -129,7 +129,6 @@ const Settings: React.FC<SettingsProps> = ({
             if (type === 'number') processedValue = value === '' ? 0 : Number(value);
             if (type === 'checkbox') processedValue = (e.target as HTMLInputElement).checked;
 
-            // Handle nested objects like freeShippingPolicy
             if (name.includes('.')) {
                 const [parent, child] = name.split('.');
                 return {
@@ -157,6 +156,74 @@ const Settings: React.FC<SettingsProps> = ({
     });
   };
 
+  const startQrPolling = () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      
+      pollingRef.current = setInterval(async () => {
+          try {
+              const data = await whatsappService.getQrCode(instanceName);
+              if (data.qrCode) {
+                  setQrCode(data.qrCode);
+                  setConnectionStatus('Conectando');
+              } else {
+                  // Se não tem QR Code, pode ser que já conectou
+                  setQrCode(null);
+                  setConnectionStatus('Conectado');
+                  clearInterval(pollingRef.current);
+                  showToast("WhatsApp conectado com sucesso!", "success");
+              }
+          } catch (e) {
+              console.error("Erro no polling do WhatsApp", e);
+          }
+      }, 1000);
+  };
+
+  const handleConnectWhatsApp = async () => {
+    if (!formData.connectivity.whatsappPhone) {
+        showToast("Informe o número do WhatsApp primeiro.", "error");
+        return;
+    }
+    setIsConnecting(true);
+    setConnectionStatus('Conectando');
+    setQrCode(null);
+    
+    try {
+        await whatsappService.connectInstance(instanceName);
+        startQrPolling();
+        showToast("Iniciando conexão. Aguarde o QR Code...", "info");
+    } catch (e) {
+        showToast("Erro ao iniciar conexão do WhatsApp.", "error");
+        setConnectionStatus('Desconectado');
+        setIsConnecting(false);
+    } finally {
+        setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnectWhatsApp = async () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    try {
+        await whatsappService.disconnectInstance(instanceName);
+        setConnectionStatus('Desconectado');
+        setQrCode(null);
+        showToast("WhatsApp desconectado.", "info");
+    } catch (e) {
+        showToast("Erro ao desconectar instância.", "error");
+    }
+  };
+
+  const handleReconnectWhatsApp = async () => {
+    setQrCode(null);
+    setConnectionStatus('Conectando');
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    try {
+        await whatsappService.disconnectInstance(instanceName);
+        setTimeout(handleConnectWhatsApp, 1500);
+    } catch (e) {
+        handleConnectWhatsApp();
+    }
+  };
+
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
         const reader = new FileReader();
@@ -172,7 +239,6 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  // Funções de Banners
   const handleOpenBannerModal = (banner: Banner | null = null) => {
     setEditingBanner(banner);
     setIsBannerModalOpen(true);
@@ -192,7 +258,6 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  // WhatsApp Importation
   const handleImportSingle = (waProd: WhatsAppProduct) => {
     const existing = products.find(p => p.sku === waProd.sku);
     if (existing) {
@@ -252,10 +317,30 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettings(formData);
-    showToast('Configurações salvas!', 'success');
+    setIsSaving(true);
+    
+    try {
+        // Se o telefone estiver presente, garante que a instância foi criada
+        if (formData.connectivity.whatsappPhone) {
+            await whatsappService.createInstance(formData.connectivity.whatsappPhone);
+        }
+        
+        updateSettings({ 
+            ...formData, 
+            connectivity: { 
+                ...formData.connectivity, 
+                whatsappStatus: connectionStatus 
+            } 
+        });
+        showToast('Configurações e instância salvas!', 'success');
+    } catch (err) {
+        console.error("Erro ao salvar configurações", err);
+        showToast('Erro ao criar instância do WhatsApp.', 'error');
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -315,8 +400,8 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -394,8 +479,8 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -486,8 +571,8 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -507,8 +592,8 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -558,8 +643,8 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -578,15 +663,80 @@ const Settings: React.FC<SettingsProps> = ({
                     {connectivityTab === 'conexao' && (
                         <div className="space-y-6">
                              <InputField label="Telefone Whatsapp" name="whatsappPhone" value={formData.connectivity.whatsappPhone} section="connectivity" placeholder="Ex: 5511999999999" onChange={handleInputChange} />
-                             <div className="flex items-center justify-between bg-gray-700 p-4 rounded-lg">
-                                <span className="font-medium">Status</span>
+                             
+                             <div className="flex items-center justify-between bg-gray-700 p-4 rounded-lg border border-gray-600">
+                                <span className="font-medium">Status da Instância</span>
                                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(connectionStatus)}`}>
                                     {connectionStatus}
                                 </span>
                              </div>
+
+                             {qrCode && connectionStatus === 'Conectando' && (
+                                <div className="bg-white p-8 rounded-2xl flex flex-col items-center gap-6 animate-fade-in mx-auto w-full max-w-sm shadow-2xl border border-gray-200">
+                                    <div className="text-center">
+                                      <h4 className="text-gray-900 font-black text-xl">Escaneie o QR Code</h4>
+                                      <p className="text-gray-500 text-sm mt-1">Aguardando leitura da instância...</p>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-xl border-4 border-primary/10 shadow-inner">
+                                        <img src={qrCode} alt="WhatsApp QR Code" className="w-56 h-56" />
+                                    </div>
+                                    <div className="space-y-2 text-center">
+                                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Como conectar?</p>
+                                      <p className="text-xs text-gray-600 leading-relaxed">
+                                        1. Abra o WhatsApp no seu celular<br/>
+                                        2. Toque em <b>Menu</b> ou <b>Configurações</b><br/>
+                                        3. Selecione <b>Aparelhos Conectados</b><br/>
+                                        4. Aponte a câmera para esta tela
+                                      </p>
+                                    </div>
+                                    <button onClick={() => { setQrCode(null); if(pollingRef.current) clearInterval(pollingRef.current); }} className="text-primary text-xs font-bold hover:underline">Cancelar pareamento</button>
+                                </div>
+                             )}
+
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {connectionStatus === 'Conectado' ? (
+                                    <>
+                                        <button 
+                                            type="button" 
+                                            onClick={handleDisconnectWhatsApp} 
+                                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            <TrashIcon className="w-5 h-5"/> Desconectar
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            onClick={handleReconnectWhatsApp} 
+                                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            <ArrowRightIcon className="w-5 h-5 rotate-180"/> Reconectar
+                                        </button>
+                                    </>
+                                ) : (
+                                  !qrCode && (
+                                    <button 
+                                        type="button" 
+                                        onClick={handleConnectWhatsApp} 
+                                        disabled={isConnecting}
+                                        className="w-full col-span-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 disabled:bg-gray-600 flex items-center justify-center gap-2"
+                                    >
+                                        {isConnecting ? (
+                                          <>
+                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            Iniciando conexão...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChatIcon className="w-5 h-5"/> Conectar WhatsApp
+                                          </>
+                                        )}
+                                    </button>
+                                  )
+                                )}
+                             </div>
+
                              <div className="border-t border-gray-700 pt-6 flex justify-end">
-                                <button onClick={handleSubmit} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                                    Salvar Alterações
+                                <button onClick={handleSubmit} disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                                    {isSaving ? 'Salvando...' : 'Salvar Configurações'}
                                 </button>
                             </div>
                         </div>
@@ -666,8 +816,8 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -716,8 +866,8 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -762,8 +912,8 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
@@ -785,8 +935,8 @@ const Settings: React.FC<SettingsProps> = ({
                 </section>
 
                 <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95">
-                        Salvar Alterações
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
               </form>
