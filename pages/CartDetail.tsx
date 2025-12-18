@@ -1,0 +1,130 @@
+
+import React from 'react';
+import type { Cart } from '../types';
+import { ChevronLeftIcon, ShoppingCartIcon, ChatIcon, CustomerIcon, CalendarIcon } from '../components/icons/Icons';
+import SankeyFlowChart from '../components/SankeyFlowChart';
+
+interface CartDetailProps {
+  cart: Cart | null;
+  onBack: () => void;
+  theme: 'light' | 'dark';
+}
+
+const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme }) => {
+  if (!cart) return null;
+
+  const handleRecover = () => {
+    const message = encodeURIComponent(`Olá ${cart.customerName}, vimos que você deixou itens incríveis no carrinho! Use o cupom VOLTEI5 para 5% OFF e finalize agora.`);
+    window.open(`https://wa.me/5511999999999?text=${message}`, '_blank');
+  };
+
+  return (
+    <div className="p-8 space-y-8 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-primary transition-colors">
+            <ChevronLeftIcon className="w-8 h-8" />
+          </button>
+          <div>
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">Análise da Jornada</h2>
+            <p className="text-gray-500 dark:text-gray-400">Rastreamento de passos até o abandono.</p>
+          </div>
+        </div>
+        <button onClick={handleRecover} className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all active:scale-95">
+          <ChatIcon /> Recuperar via WhatsApp
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Lado Esquerdo: Info do Carrinho */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+               Perfil do Cliente
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(cart.customerName)}&background=random`} className="w-16 h-16 rounded-full" />
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white">{cart.customerName}</p>
+                  <p className="text-sm text-gray-500 truncate">{cart.customerEmail}</p>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between text-sm">
+                <span className="text-gray-500">Último Acesso:</span>
+                <span className="font-medium dark:text-gray-300 flex items-center gap-1">
+                   {new Date(cart.updatedAt).toLocaleString('pt-BR')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+               Conteúdo do Carrinho
+            </h3>
+            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+              {cart.items.map((item, idx) => (
+                <div key={idx} className="flex gap-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-transparent hover:border-primary/20 transition-all">
+                  <img src={item.imageUrl} className="w-14 h-14 rounded-lg object-cover bg-white" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold dark:text-white truncate">{item.productName}</p>
+                    <p className="text-xs text-gray-500">Qtd: {item.quantity} • {item.size}</p>
+                    <p className="text-sm font-bold text-primary">R$ {Number(item.price).toFixed(2)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex justify-between items-end">
+                <span className="text-gray-500 font-medium">Total Acumulado</span>
+                <span className="text-2xl font-black text-primary">R$ {Number(cart.total).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Lado Direito: Gráfico de Jornada */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Fluxo de Conversão (Sankey)</h3>
+                <p className="text-sm text-gray-500">Visualização volumétrica da jornada do usuário.</p>
+              </div>
+              <div className="flex gap-2">
+                <span className="flex items-center gap-1 text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded">ALTA RETENÇÃO</span>
+              </div>
+            </div>
+            
+            <SankeyFlowChart theme={theme} />
+
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Visitas', val: '1.2k', color: 'bg-blue-500' },
+                { label: 'Interesse', val: '45%', color: 'bg-indigo-500' },
+                { label: 'Abandono', val: '26%', color: 'bg-orange-500' },
+                { label: 'Conversão', val: '15%', color: 'bg-green-500' },
+              ].map((m, i) => (
+                <div key={i} className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
+                  <div className={`w-2 h-2 rounded-full ${m.color} mb-2`}></div>
+                  <p className="text-xs font-bold text-gray-400 uppercase">{m.label}</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-white">{m.val}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-primary/5 border border-primary/20 p-6 rounded-2xl">
+            <h4 className="font-bold text-primary mb-2 flex items-center gap-2">💡 Insights da IA</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+              O cliente demonstrou alto interesse na categoria <b>Camisetas</b>, permanecendo 4 minutos na página do produto antes de adicionar ao carrinho. O abandono ocorreu na etapa de <b>Cálculo de Frete</b>. Recomendamos oferecer um cupom de frete grátis para converter esta venda.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CartDetail;

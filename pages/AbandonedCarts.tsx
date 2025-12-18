@@ -5,9 +5,10 @@ import { ShoppingCartIcon, ChatIcon, TrashIcon, EyeIcon } from '../components/ic
 
 interface AbandonedCartsProps {
   carts: Cart[];
+  onViewDetail?: (cart: Cart) => void;
 }
 
-const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts }) => {
+const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCartId, setSelectedCartId] = useState<string | null>(null);
 
@@ -65,7 +66,6 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts }) => {
 
   const handleRecover = (cart: Cart) => {
     const message = encodeURIComponent(`Olá ${cart.customerName}, vimos que você deixou alguns itens interessantes no carrinho da nossa loja. Podemos te ajudar a finalizar sua escolha? Aproveite o cupom VOLTEI5 para 5% de desconto em sua compra!`);
-    // Em um cenário real, usaríamos o telefone do cliente. Aqui usamos um placeholder.
     const phone = "5511999999999"; 
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
@@ -147,7 +147,11 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts }) => {
                                             <ChatIcon className="w-4 h-4"/>
                                         </button>
                                         <button 
-                                            onClick={(e) => { e.stopPropagation(); setSelectedCartId(cartId); }} 
+                                            onClick={(e) => { 
+                                              e.stopPropagation(); 
+                                              if (onViewDetail) onViewDetail(cart);
+                                              else setSelectedCartId(cartId); 
+                                            }} 
                                             className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
                                         >
                                             <EyeIcon className="w-4 h-4"/>
@@ -199,12 +203,12 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts }) => {
                             <span className="text-gray-500 dark:text-gray-400">Total:</span>
                             <span className="text-primary">R$ {Number(selectedCart.total).toFixed(2)}</span>
                         </div>
-                        <button onClick={() => handleRecover(selectedCart)} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/20 transition-all active:scale-95">
-                            <ChatIcon/> Recuperar Carrinho Unificado
+                        <button onClick={() => {
+                            if (onViewDetail) onViewDetail(selectedCart);
+                            else handleRecover(selectedCart);
+                        }} className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95">
+                            <EyeIcon/> Ver Jornada Completa
                         </button>
-                        <p className="text-[10px] text-center text-gray-500 leading-relaxed">
-                            Ao clicar, você iniciará uma conversa no WhatsApp com a mensagem de recuperação pronta.
-                        </p>
                     </div>
                 </div>
             ) : (

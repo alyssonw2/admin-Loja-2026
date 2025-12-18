@@ -11,6 +11,7 @@ export enum Page {
   Orders = 'Pedidos',
   OrderDetail = 'Detalhes do Pedido',
   AbandonedCarts = 'Carrinhos',
+  CartDetail = 'Detalhes do Carrinho',
   Coupons = 'Cupons',
   Customers = 'Clientes',
   CustomerProfile = 'Perfil do Cliente',

@@ -19,7 +19,8 @@ import Landing from './pages/Landing';
 import CompleteSetup from './pages/CompleteSetup';
 import Profile from './pages/Profile';
 import AbandonedCarts from './pages/AbandonedCarts';
-import { Page, Order, Customer, Product, Toast, User } from './types';
+import CartDetail from './pages/CartDetail';
+import { Page, Order, Customer, Product, Toast, User, Cart } from './types';
 import { useMockData } from './hooks/useMockData';
 import ToastContainer from './components/Toast';
 import * as apiService from './services/apiService';
@@ -33,6 +34,7 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.Landing); 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCart, setSelectedCart] = useState<Cart | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   
@@ -154,6 +156,16 @@ const App: React.FC = () => {
     setCurrentPage(Page.Customers);
   }, []);
 
+  const handleViewCartDetail = useCallback((cart: Cart) => {
+    setSelectedCart(cart);
+    setCurrentPage(Page.CartDetail);
+  }, []);
+
+  const handleBackToCarts = useCallback(() => {
+    setSelectedCart(null);
+    setCurrentPage(Page.AbandonedCarts);
+  }, []);
+
   const navigateToAddProduct = useCallback(() => {
     setEditingProduct(null);
     setCurrentPage(Page.AddEditProduct);
@@ -236,7 +248,8 @@ const App: React.FC = () => {
         return <ProductForm onBack={handleBackToProducts} onSave={handleSaveProduct} product={editingProduct} categories={categories} brands={brands} models={models} materials={materials} colors={colors} showToast={showToast} />;
       case Page.Orders: return <Orders orders={orders} onViewOrder={handleViewOrder} />;
       case Page.OrderDetail: return <OrderDetail order={selectedOrder} onBack={handleBackToOrders} updateOrder={updateOrder} reviews={reviews} showToast={showToast} />;
-      case Page.AbandonedCarts: return <AbandonedCarts carts={carts} />;
+      case Page.AbandonedCarts: return <AbandonedCarts carts={carts} onViewDetail={handleViewCartDetail} />;
+      case Page.CartDetail: return <CartDetail cart={selectedCart} onBack={handleBackToCarts} theme={theme} />;
       case Page.Coupons: return <Coupons coupons={coupons} addCoupon={addCoupon} updateCoupon={updateCoupon} deleteCoupon={deleteCoupon} showToast={showToast} />;
       case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} showToast={showToast} />;
       case Page.CustomerProfile: return <CustomerProfile customer={selectedCustomer} orders={orders} onBack={handleBackToCustomers} />;
@@ -250,8 +263,6 @@ const App: React.FC = () => {
           categories={categories} brands={brands} models={models} materials={materials} colors={colors}
           products={products} addProduct={addProduct} updateProduct={updateProduct}
         />;
-      case Page.MarketplaceMercadoLivre:
-        return <Marketplace settings={storeSettings} updateSettings={updateStoreSettings} products={products} updateProduct={updateProduct} showToast={showToast} />;
       case Page.MarketplaceMercadoLivre:
         return <Marketplace settings={storeSettings} updateSettings={updateStoreSettings} products={products} updateProduct={updateProduct} showToast={showToast} />;
       case Page.Profile:
