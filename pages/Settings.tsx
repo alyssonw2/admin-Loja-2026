@@ -100,6 +100,26 @@ const Settings: React.FC<SettingsProps> = ({
     };
   }, []);
 
+  // Verifica status automaticamente ao entrar na aba de conectividade
+  useEffect(() => {
+    const checkStatus = async () => {
+        if (activeTab === 'conectividade' && formData.connectivity.whatsappPhone) {
+            try {
+                const status = await whatsappService.getInstanceStatus(formData.connectivity.whatsappPhone);
+                setConnectionStatus(status);
+                // Se detectar que conectou, para qualquer polling de QR pendente
+                if (status === 'Conectado' && pollingRef.current) {
+                    clearInterval(pollingRef.current);
+                    setQrCode(null);
+                }
+            } catch (e) {
+                console.error("Erro ao verificar status automático", e);
+            }
+        }
+    };
+    checkStatus();
+  }, [activeTab, connectivityTab, formData.connectivity.whatsappPhone]);
+
   const loadCatalog = useCallback(async () => {
     if (connectionStatus !== 'Conectado' || !formData.connectivity.whatsappPhone) return;
     setIsFetchingCatalog(true);

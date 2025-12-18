@@ -203,6 +203,8 @@ export interface ChatMessage {
   sender: 'admin' | 'user';
   text: string;
   timestamp: string;
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
 }
 
 export interface Banner {

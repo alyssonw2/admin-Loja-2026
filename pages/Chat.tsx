@@ -31,32 +31,52 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
         try {
             const apiChats = await whatsappService.getChats(instanceName);
             
-            // Busca detalhes de contato para cada chat para obter nomes reais e imagens
-            const enrichedChats = await Promise.all(apiChats.map(async (chat) => {
-                const contactRes = await whatsappService.getContactInfo(instanceName, chat.id);
+            const filteredChats = apiChats.filter((chat: any) => 
+                chat.remoteJid && chat.remoteJid.endsWith('@s.whatsapp.net')
+            );
+
+            const enrichedChats = await Promise.all(filteredChats.map(async (chat: any) => {
+                const contactRes = await whatsappService.getContactInfo(instanceName, chat.remoteJid);
+                
+                // Nome inicial baseado no que vem da lista de chats ou prefixo do JID
+                let displayName = chat.contactName !== 'Desconhecido' ? chat.contactName : chat.remoteJid.split('@')[0];
+                let displayImg = chat.img || null;
+
                 if (contactRes.success && contactRes.contact) {
                     const c = contactRes.contact;
-                    return {
-                        ...chat,
-                        displayName: c.name || chat.name || chat.id.split('@')[0],
-                        displayImg: c.imgUrl || (c.type === 'group' ? c.group?.profilePicture : null)
-                    };
+                    // Se o nome retornado não for "Sem nome" e existir, atualiza o displayName
+                    if (c.name && c.name !== 'Sem nome') {
+                        displayName = c.name;
+                    }
+                    displayImg = displayImg || c.imgUrl || null;
                 }
+
                 return {
                     ...chat,
-                    displayName: chat.name || chat.id.split('@')[0],
-                    displayImg: null
+                    displayName,
+                    displayImg
                 };
             }));
 
-            const mappedChats: ChatConversation[] = enrichedChats.map(chat => ({
-                id: chat.id,
-                contactName: chat.displayName,
-                lastMessage: chat.lastMessage?.message || 'Nenhuma mensagem',
-                timestamp: new Date(chat.conversationTimestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit'}),
-                unreadCount: chat.unreadCount,
-                avatarUrl: chat.displayImg || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.displayName)}&background=random`
-            }));
+            // Mapear e ORDENAR conversas (Mais recentes no topo da lista lateral para fácil acesso)
+            const mappedChats: ChatConversation[] = enrichedChats.map((chat: any) => {
+                let ts = 0;
+                if (typeof chat.dataUltimaMensagem === 'number') {
+                    ts = chat.dataUltimaMensagem * 1000;
+                } else if (chat.created_at) {
+                    ts = new Date(chat.created_at).getTime();
+                }
+
+                return {
+                    id: chat.remoteJid,
+                    contactName: chat.displayName,
+                    lastMessage: chat.ultimaMensagem || 'Nenhuma mensagem',
+                    timestamp: ts > 0 ? new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit'}) : '--:--',
+                    rawTimestamp: ts,
+                    unreadCount: chat.unreadCount || 0,
+                    avatarUrl: chat.displayImg || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.displayName)}&background=random`
+                };
+            }).sort((a, b) => (b.rawTimestamp || 0) - (a.rawTimestamp || 0));
 
             setConversations(mappedChats);
             if (!selectedConversationId && mappedChats.length > 0) {
@@ -78,16 +98,69 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
         }
         setIsLoadingMessages(true);
         try {
-            const logs = await whatsappService.getMessagesForChat(instanceName, chatId);
-            const mappedMessages: ChatMessage[] = logs.map(log => ({
-                id: log.id.toString(),
-                sender: log.type === 'sent' ? 'admin' : 'user',
-                text: log.data.message?.conversation || log.data.message?.extendedTextMessage?.text || '[Mídia não suportada]',
-                timestamp: new Date(log.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            }));
-            setMessages(mappedMessages.reverse());
+            const rawMessages = await whatsappService.getMessagesForChat(instanceName, chatId);
+            
+            // ORDENAÇÃO: Da mais antiga para a mais nova (Mensagem mais nova no FIM)
+            const sortedMessages = [...rawMessages].sort((a, b) => {
+                const timeA = a.timestamp || a.messageTimestamp || 0;
+                const timeB = b.timestamp || b.messageTimestamp || 0;
+                return timeA - timeB; // Menor (antigo) -> Maior (recente)
+            });
+
+            const mappedMessages: ChatMessage[] = sortedMessages.map(msg => {
+                const isFromMe = msg.fromMe === true;
+                
+                let text = '';
+                let mediaUrl = undefined;
+                let mediaType: 'image' | 'video' | undefined = undefined;
+                
+                const ensureBase64Prefix = (data: string, type: 'image' | 'video') => {
+                    if (!data) return undefined;
+                    if (data.startsWith('data:')) return data;
+                    const mime = type === 'image' ? 'image/jpeg' : 'video/mp4';
+                    return `data:${mime};base64,${data}`;
+                };
+
+                const content = msg.content || msg.message;
+                
+                if (content) {
+                    if (content.imageMessage) {
+                        mediaType = 'image';
+                        mediaUrl = ensureBase64Prefix(content.imageMessage.url || content.imageMessage.base64, 'image');
+                        text = content.imageMessage.caption || '';
+                    } else if (content.videoMessage) {
+                        mediaType = 'video';
+                        mediaUrl = ensureBase64Prefix(content.videoMessage.url || content.videoMessage.base64, 'video');
+                        text = content.videoMessage.caption || '';
+                    } else {
+                        text = content.conversation || 
+                               content.extendedTextMessage?.text || 
+                               '';
+                    }
+                }
+                
+                let timeStr = '';
+                const timestamp = msg.timestamp || msg.messageTimestamp || msg.created_at;
+                if (timestamp) {
+                    const date = typeof timestamp === 'number' ? new Date(timestamp * 1000) : new Date(timestamp);
+                    timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                }
+
+                return {
+                    id: msg.id || msg.key?.id || Math.random().toString(),
+                    sender: isFromMe ? 'admin' : 'user',
+                    text: text || (mediaUrl ? '' : '[Mensagem sem conteúdo textual]'),
+                    timestamp: timeStr,
+                    mediaUrl,
+                    mediaType
+                };
+            });
+
+            setMessages(mappedMessages);
         } catch (error) {
-            console.error("Erro ao buscar mensagens:", error);
+            console.error("Erro ao processar mensagens:", error);
         } finally {
             setIsLoadingMessages(false);
         }
@@ -95,7 +168,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
     
     useEffect(() => {
        fetchChats();
-       const interval = setInterval(fetchChats, 30000); // Aumentado para 30s para evitar excesso de requisições de contato
+       const interval = setInterval(fetchChats, 30000);
        return () => clearInterval(interval);
     }, [fetchChats]);
 
@@ -107,8 +180,11 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
         }
     }, [selectedConversationId, fetchMessages]);
     
+    // Rolar para o fim sempre que as mensagens mudarem
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
     }, [messages]);
 
     const selectedConversation = useMemo(() => {
@@ -119,17 +195,20 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
         e.preventDefault();
         if (!newMessage.trim() || !selectedConversationId || !whatsappPhone) return;
 
+        const msgText = newMessage.trim();
         const tempMessage: ChatMessage = {
             id: `temp-${Date.now()}`,
             sender: 'admin',
-            text: newMessage,
+            text: msgText,
             timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         };
+        
+        // Adiciona a nova mensagem ao final da lista
         setMessages(prev => [...prev, tempMessage]);
         setNewMessage('');
 
         try {
-            await whatsappService.sendMessage(instanceName, selectedConversationId, tempMessage.text);
+            await whatsappService.sendMessage(instanceName, selectedConversationId, msgText);
             setTimeout(() => fetchMessages(selectedConversationId), 1000); 
         } catch (error) {
             console.error("Erro ao enviar mensagem:", error);
@@ -152,8 +231,8 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
             title = "Carregando Conversas...";
             message = "Aguarde enquanto buscamos suas mensagens e contatos.";
         } else if (conversations.length === 0) {
-            title = "Nenhuma Conversa Encontrada";
-            message = "Parece que não há conversas ativas no momento.";
+            title = "Nenhuma Conversa Individual";
+            message = "Apenas conversas com contatos (@s.whatsapp.net) são exibidas aqui.";
         } else {
             title = "Selecione uma conversa";
             message = "Escolha uma conversa da lista à esquerda para ver as mensagens.";
@@ -170,12 +249,11 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
         );
     };
 
-
     return (
         <div className="flex h-full">
             <aside className="w-1/3 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col min-w-[320px]">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Conversas</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Contatos</h2>
                      <button onClick={fetchChats} disabled={isLoading || whatsappStatus !== 'Conectado'} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
                         <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5m11 11v-5h-5m-1 1l-15-15"/>
@@ -185,7 +263,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                 <div className="flex-1 overflow-y-auto">
                     {!isLoading && conversations.length === 0 && (
                         <p className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-                          {whatsappStatus !== 'Conectado' ? 'WhatsApp desconectado.' : 'Nenhuma conversa ativa.'}
+                          {whatsappStatus !== 'Conectado' ? 'WhatsApp desconectado.' : 'Nenhum contato encontrado.'}
                         </p>
                     )}
 
@@ -195,7 +273,14 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                             onClick={() => setSelectedConversationId(convo.id)}
                             className={`w-full text-left p-4 flex items-center space-x-4 border-b border-gray-100 dark:border-gray-700/50 transition-all ${selectedConversationId === convo.id ? 'bg-primary/10 dark:bg-primary/20 border-l-4 border-l-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30 border-l-4 border-l-transparent'}`}
                         >
-                            <img src={convo.avatarUrl} alt={convo.contactName} className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 object-cover shadow-sm" />
+                            <div className="relative">
+                                <img src={convo.avatarUrl} alt={convo.contactName} className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 object-cover shadow-sm" />
+                                <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5 shadow-sm">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" className="text-green-500 fill-current">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                    </svg>
+                                </div>
+                            </div>
                             <div className="flex-1 overflow-hidden">
                                 <div className="flex justify-between items-center">
                                     <h3 className="font-bold text-gray-900 dark:text-white truncate text-sm">{convo.contactName}</h3>
@@ -225,6 +310,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">{selectedConversation.id}</p>
                             </div>
                         </header>
+                        
                         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] dark:bg-none">
                            {isLoadingMessages ? (
                                <div className="flex justify-center items-center h-full">
@@ -237,18 +323,39 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                                </div>
                            ) : (
                                <div className="flex flex-col space-y-2">
-                                   {messages.map(msg => (
-                                       <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                                   {messages.map((msg, idx) => (
+                                       <div key={msg.id || idx} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
                                            <div className={`max-w-[75%] p-3 rounded-2xl shadow-sm text-sm ${msg.sender === 'admin' ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-none border border-gray-100 dark:border-gray-700'}`}>
-                                               <p className="leading-relaxed">{msg.text}</p>
+                                               {msg.mediaUrl && msg.mediaType === 'image' && (
+                                                   <div className="mb-2 -mx-1 -mt-1">
+                                                       <img 
+                                                         src={msg.mediaUrl} 
+                                                         alt="WhatsApp Media" 
+                                                         className="rounded-lg max-w-full h-auto object-cover border border-gray-100 dark:border-gray-700 shadow-sm cursor-pointer hover:opacity-95" 
+                                                         onClick={() => window.open(msg.mediaUrl, '_blank')}
+                                                       />
+                                                   </div>
+                                               )}
+                                               {msg.mediaUrl && msg.mediaType === 'video' && (
+                                                   <div className="mb-2 -mx-1 -mt-1">
+                                                       <video 
+                                                         src={msg.mediaUrl} 
+                                                         controls 
+                                                         className="rounded-lg max-w-full h-auto border border-gray-100 dark:border-gray-700 shadow-sm"
+                                                       />
+                                                   </div>
+                                               )}
+                                               {msg.text && <p className="leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>}
                                                <span className={`text-[9px] mt-1 block text-right opacity-60 font-bold uppercase`}>{msg.timestamp}</span>
                                            </div>
                                        </div>
                                    ))}
+                                   {/* Elemento de referência para o scroll automático */}
                                    <div ref={messagesEndRef} />
                                </div>
                            )}
                         </div>
+
                         <footer className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
                             <form onSubmit={handleSendMessage}>
                                 <div className="relative flex items-center gap-2">

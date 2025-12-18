@@ -14,7 +14,6 @@ export const listInstances = async (): Promise<any[]> => {
     try {
         const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances`);
         const data = await response.json();
-        // A API pode retornar o array diretamente ou dentro de um objeto
         return Array.isArray(data) ? data : (data.instances || []);
     } catch (e) {
         return [];
@@ -27,7 +26,6 @@ export const getInstanceStatus = async (name: string): Promise<'Conectado' | 'De
         const instance = instances.find(i => i.name === name);
         if (!instance) return 'Desconectado';
         
-        // Mapeamento de status da API para o padrão do App
         if (instance.connectionStatus === 'open' || instance.status === 'connected') return 'Conectado';
         if (instance.status === 'connecting' || instance.status === 'qrcode') return 'Conectando';
         return 'Desconectado';
@@ -85,12 +83,21 @@ export const sendMessage = async (instanceName: string, number: string, message:
 };
 
 export const getMessagesForChat = async (instanceName: string, chatId: string): Promise<any[]> => {
-    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/logs?limit=50`);
-    const data = await response.json();
-    return (data.logs || []).filter((log: any) => {
-        const remoteJid = log.data?.key?.remoteJid || log.data?.message?.key?.remoteJid;
-        return remoteJid === chatId;
-    });
+    try {
+        // Rota solicitada: /api/instances/:name/messages/:uid
+        // Nota: O JID (uid) é passado diretamente como parte do path
+        const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/messages/${chatId}`);
+        const data = await response.json();
+        
+        if (data.success && data.messages) {
+            return data.messages;
+        }
+        
+        return Array.isArray(data) ? data : (data.messages || []);
+    } catch (error) {
+        console.error(`Erro ao buscar mensagens da rota por UID para ${chatId}:`, error);
+        return [];
+    }
 };
 
 export const getCatalog = async (instanceName: string): Promise<any[]> => {
