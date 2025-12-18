@@ -8,14 +8,25 @@ interface CartDetailProps {
   cart: Cart | null;
   onBack: () => void;
   theme: 'light' | 'dark';
+  // FIX: Added missing onRecoverCart prop to satisfy Type check in App.tsx
+  onRecoverCart?: (jid: string, message: string) => void;
 }
 
-const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme }) => {
+const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverCart }) => {
   if (!cart) return null;
 
+  // FIX: Updated handleRecover to use onRecoverCart if available, mirroring AbandonedCarts recovery logic
   const handleRecover = () => {
-    const message = encodeURIComponent(`Olá ${cart.customerName}, vimos que você deixou itens incríveis no carrinho! Use o cupom VOLTEI5 para 5% OFF e finalize agora.`);
-    window.open(`https://wa.me/5511999999999?text=${message}`, '_blank');
+    const message = `Olá ${cart.customerName}, vimos que você deixou itens incríveis no carrinho! Use o cupom VOLTEI5 para 5% OFF e finalize agora.`;
+    
+    if (onRecoverCart) {
+        const jid = cart.customerId.includes('@') ? cart.customerId : `${cart.customerId.replace(/\D/g, '')}@s.whatsapp.net`;
+        onRecoverCart(jid, message);
+    } else {
+        const encodedMsg = encodeURIComponent(message);
+        const phone = "5511999999999"; 
+        window.open(`https://wa.me/${phone}?text=${encodedMsg}`, '_blank');
+    }
   };
 
   return (

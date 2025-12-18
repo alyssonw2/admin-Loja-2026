@@ -8,9 +8,17 @@ interface ChatProps {
     whatsappStatus: StoreSettings['connectivity']['whatsappStatus'];
     whatsappPhone: string;
     showToast: (message: string, type: Toast['type']) => void;
+    initialChatData?: { jid: string; message: string } | null;
+    onConsumeInitialData?: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast }) => {
+const Chat: React.FC<ChatProps> = ({ 
+    whatsappStatus, 
+    whatsappPhone, 
+    showToast, 
+    initialChatData,
+    onConsumeInitialData 
+}) => {
     const [conversations, setConversations] = useState<ChatConversation[]>([]);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -18,6 +26,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [newMessage, setNewMessage] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const lastMessageCountRef = useRef<number>(0);
 
     const instanceName = whatsappPhone || "default";
 
@@ -38,13 +47,11 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
             const enrichedChats = await Promise.all(filteredChats.map(async (chat: any) => {
                 const contactRes = await whatsappService.getContactInfo(instanceName, chat.remoteJid);
                 
-                // Nome inicial baseado no que vem da lista de chats ou prefixo do JID
                 let displayName = chat.contactName !== 'Desconhecido' ? chat.contactName : chat.remoteJid.split('@')[0];
                 let displayImg = chat.img || null;
 
                 if (contactRes.success && contactRes.contact) {
                     const c = contactRes.contact;
-                    // Se o nome retornado não for "Sem nome" e existir, atualiza o displayName
                     if (c.name && c.name !== 'Sem nome') {
                         displayName = c.name;
                     }
@@ -58,7 +65,6 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                 };
             }));
 
-            // Mapear e ORDENAR conversas (Mais recentes no topo da lista lateral para fácil acesso)
             const mappedChats: ChatConversation[] = enrichedChats.map((chat: any) => {
                 let ts = 0;
                 if (typeof chat.dataUltimaMensagem === 'number') {
@@ -79,7 +85,14 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
             }).sort((a, b) => (b.rawTimestamp || 0) - (a.rawTimestamp || 0));
 
             setConversations(mappedChats);
-            if (!selectedConversationId && mappedChats.length > 0) {
+            
+            if (initialChatData && initialChatData.jid) {
+                setSelectedConversationId(initialChatData.jid);
+                setNewMessage(initialChatData.message);
+                if (onConsumeInitialData) {
+                    onConsumeInitialData();
+                }
+            } else if (!selectedConversationId && mappedChats.length > 0) {
                 setSelectedConversationId(mappedChats[0].id);
             }
         } catch (error) {
@@ -88,28 +101,28 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
         } finally {
             setIsLoading(false);
         }
-    }, [whatsappStatus, whatsappPhone, selectedConversationId, instanceName]);
+    }, [whatsappStatus, whatsappPhone, selectedConversationId, instanceName, initialChatData, onConsumeInitialData]);
 
-    const fetchMessages = useCallback(async (chatId: string) => {
+    const fetchMessages = useCallback(async (chatId: string, isSilent = false) => {
         if (whatsappStatus !== 'Conectado' || !whatsappPhone) {
             setMessages([]);
             setIsLoadingMessages(false);
             return;
         }
-        setIsLoadingMessages(true);
+        
+        if (!isSilent) setIsLoadingMessages(true);
+        
         try {
             const rawMessages = await whatsappService.getMessagesForChat(instanceName, chatId);
             
-            // ORDENAÇÃO: Da mais antiga para a mais nova (Mensagem mais nova no FIM)
             const sortedMessages = [...rawMessages].sort((a, b) => {
                 const timeA = a.timestamp || a.messageTimestamp || 0;
                 const timeB = b.timestamp || b.messageTimestamp || 0;
-                return timeA - timeB; // Menor (antigo) -> Maior (recente)
+                return timeA - timeB; 
             });
 
             const mappedMessages: ChatMessage[] = sortedMessages.map(msg => {
                 const isFromMe = msg.fromMe === true;
-                
                 let text = '';
                 let mediaUrl = undefined;
                 let mediaType: 'image' | 'video' | undefined = undefined;
@@ -122,7 +135,6 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                 };
 
                 const content = msg.content || msg.message;
-                
                 if (content) {
                     if (content.imageMessage) {
                         mediaType = 'image';
@@ -133,9 +145,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                         mediaUrl = ensureBase64Prefix(content.videoMessage.url || content.videoMessage.base64, 'video');
                         text = content.videoMessage.caption || '';
                     } else {
-                        text = content.conversation || 
-                               content.extendedTextMessage?.text || 
-                               '';
+                        text = content.conversation || content.extendedTextMessage?.text || '';
                     }
                 }
                 
@@ -151,7 +161,7 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                 return {
                     id: msg.id || msg.key?.id || Math.random().toString(),
                     sender: isFromMe ? 'admin' : 'user',
-                    text: text || (mediaUrl ? '' : '[Mensagem sem conteúdo textual]'),
+                    text: text || (mediaUrl ? '' : '[Mensagem sem conteúdo]'),
                     timestamp: timeStr,
                     mediaUrl,
                     mediaType
@@ -162,29 +172,47 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
         } catch (error) {
             console.error("Erro ao processar mensagens:", error);
         } finally {
-            setIsLoadingMessages(false);
+            if (!isSilent) setIsLoadingMessages(false);
         }
     }, [whatsappStatus, whatsappPhone, instanceName]);
     
+    // Atualização periódica da lista de contatos
     useEffect(() => {
        fetchChats();
        const interval = setInterval(fetchChats, 30000);
        return () => clearInterval(interval);
     }, [fetchChats]);
 
+    // Atualização em tempo real (Polling) do chat aberto
     useEffect(() => {
+        let messageInterval: any;
+        
         if (selectedConversationId) {
+            // Busca inicial
             fetchMessages(selectedConversationId);
+            
+            // Polling de 5 segundos para mensagens da conversa aberta
+            messageInterval = setInterval(() => {
+                fetchMessages(selectedConversationId, true);
+            }, 5000);
         } else {
             setMessages([]);
+            lastMessageCountRef.current = 0;
         }
+
+        return () => {
+            if (messageInterval) clearInterval(messageInterval);
+        };
     }, [selectedConversationId, fetchMessages]);
     
-    // Rolar para o fim sempre que as mensagens mudarem
+    // Rolar para o fim APENAS se novas mensagens chegarem
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        if (messages.length > lastMessageCountRef.current) {
+            if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            }
         }
+        lastMessageCountRef.current = messages.length;
     }, [messages]);
 
     const selectedConversation = useMemo(() => {
@@ -203,13 +231,13 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
             timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         };
         
-        // Adiciona a nova mensagem ao final da lista
         setMessages(prev => [...prev, tempMessage]);
         setNewMessage('');
 
         try {
             await whatsappService.sendMessage(instanceName, selectedConversationId, msgText);
-            setTimeout(() => fetchMessages(selectedConversationId), 1000); 
+            // Re-busca imediata após envio
+            setTimeout(() => fetchMessages(selectedConversationId, true), 1000); 
         } catch (error) {
             console.error("Erro ao enviar mensagem:", error);
             showToast("Não foi possível enviar a mensagem.", 'error');
@@ -350,7 +378,6 @@ const Chat: React.FC<ChatProps> = ({ whatsappStatus, whatsappPhone, showToast })
                                            </div>
                                        </div>
                                    ))}
-                                   {/* Elemento de referência para o scroll automático */}
                                    <div ref={messagesEndRef} />
                                </div>
                            )}

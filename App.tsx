@@ -40,6 +40,9 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [globalWhatsappStatus, setGlobalWhatsappStatus] = useState<StoreSettings['connectivity']['whatsappStatus']>('Desconectado');
   
+  // Estado para transferir dados do carrinho abandonado para o chat
+  const [pendingChat, setPendingChat] = useState<{ jid: string; message: string } | null>(null);
+
   const [pendingStoreId, setPendingStoreId] = useState<number | string | null>(null);
   const [pendingZipCode, setPendingZipCode] = useState<string>('');
   
@@ -107,26 +110,18 @@ const App: React.FC = () => {
     analyticsData, analyticsPeriod, setAnalyticsPeriod,
   } = useMockData({ showToast, isAuthenticated: !!currentUser });
 
-  // Monitoramento do status do WhatsApp
   useEffect(() => {
     let interval: any;
-    
     const checkStatus = async () => {
       if (currentUser && storeSettings?.connectivity.whatsappPhone) {
         const status = await whatsappService.getInstanceStatus(storeSettings.connectivity.whatsappPhone);
         setGlobalWhatsappStatus(status);
-        
-        // Sincroniza o status localmente no objeto de settings se houver mudança
-        if (status !== storeSettings.connectivity.whatsappStatus) {
-            // Nota: Evitamos updateStoreSettings aqui para não gerar loop de salvamento, 
-            // apenas atualizamos o estado visual global que o Header consome.
-        }
       }
     };
 
     if (currentUser && storeSettings) {
       checkStatus();
-      interval = setInterval(checkStatus, 30000); // Verifica a cada 30 segundos
+      interval = setInterval(checkStatus, 30000);
     }
 
     return () => {
@@ -223,6 +218,12 @@ const App: React.FC = () => {
     setCurrentPage(page);
     refreshData(); 
   }, [refreshData]);
+
+  // Função para iniciar recuperação de carrinho via chat interno
+  const handleRecoverCart = useCallback((jid: string, message: string) => {
+    setPendingChat({ jid, message });
+    setCurrentPage(Page.Chat);
+  }, []);
   
   const LoadingScreen = ({ message }: { message: string }) => (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white animate-fade-in">
@@ -258,7 +259,16 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case Page.Dashboard: return <Dashboard kpi={kpi} recentOrders={orders} salesData={analyticsData.chart} theme={theme} />;
-      case Page.Chat: return <Chat whatsappStatus={globalWhatsappStatus} whatsappPhone={storeSettings.connectivity.whatsappPhone} showToast={showToast} />;
+      case Page.Chat: 
+        return (
+          <Chat 
+            whatsappStatus={globalWhatsappStatus} 
+            whatsappPhone={storeSettings.connectivity.whatsappPhone} 
+            showToast={showToast}
+            initialChatData={pendingChat}
+            onConsumeInitialData={() => setPendingChat(null)}
+          />
+        );
       case Page.Products:
         return <Products 
             products={products} onAddProductClick={navigateToAddProduct} onEditProductClick={navigateToEditProduct} deleteProduct={deleteProduct}
@@ -277,8 +287,23 @@ const App: React.FC = () => {
         return <ProductForm onBack={handleBackToProducts} onSave={handleSaveProduct} product={editingProduct} categories={categories} brands={brands} models={models} materials={materials} colors={colors} showToast={showToast} />;
       case Page.Orders: return <Orders orders={orders} onViewOrder={handleViewOrder} />;
       case Page.OrderDetail: return <OrderDetail order={selectedOrder} onBack={handleBackToOrders} updateOrder={updateOrder} reviews={reviews} showToast={showToast} />;
-      case Page.AbandonedCarts: return <AbandonedCarts carts={carts} onViewDetail={handleViewCartDetail} />;
-      case Page.CartDetail: return <CartDetail cart={selectedCart} onBack={handleBackToCarts} theme={theme} />;
+      case Page.AbandonedCarts: 
+        return (
+          <AbandonedCarts 
+            carts={carts} 
+            onViewDetail={handleViewCartDetail} 
+            onRecoverCart={handleRecoverCart}
+          />
+        );
+      case Page.CartDetail: 
+        return (
+          <CartDetail 
+            cart={selectedCart} 
+            onBack={handleBackToCarts} 
+            theme={theme} 
+            onRecoverCart={handleRecoverCart}
+          />
+        );
       case Page.Coupons: return <Coupons coupons={coupons} addCoupon={addCoupon} updateCoupon={updateCoupon} deleteCoupon={deleteCoupon} showToast={showToast} />;
       case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} showToast={showToast} />;
       case Page.CustomerProfile: return <CustomerProfile customer={selectedCustomer} orders={orders} onBack={handleBackToCustomers} />;

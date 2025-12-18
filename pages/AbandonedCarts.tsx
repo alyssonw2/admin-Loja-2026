@@ -6,13 +6,13 @@ import { ShoppingCartIcon, ChatIcon, TrashIcon, EyeIcon } from '../components/ic
 interface AbandonedCartsProps {
   carts: Cart[];
   onViewDetail?: (cart: Cart) => void;
+  onRecoverCart?: (jid: string, message: string) => void;
 }
 
-const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail }) => {
+const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, onRecoverCart }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCartId, setSelectedCartId] = useState<string | null>(null);
 
-  // Agrupa os carrinhos por cliente (usando customerId ou customerEmail como chave)
   const groupedCarts = useMemo(() => {
     const map = new Map<string, Cart>();
 
@@ -21,7 +21,6 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail }) 
         if (map.has(key)) {
             const existing = map.get(key)!;
             
-            // Une os itens, agrupando quantidades se for o mesmo produto e tamanho
             const mergedItemsMap = new Map<string, CartItem>();
             [...existing.items, ...cart.items].forEach(item => {
                 const itemKey = `${item.productId}-${item.size || 'unique'}`;
@@ -65,9 +64,19 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail }) 
   };
 
   const handleRecover = (cart: Cart) => {
-    const message = encodeURIComponent(`Olá ${cart.customerName}, vimos que você deixou alguns itens interessantes no carrinho da nossa loja. Podemos te ajudar a finalizar sua escolha? Aproveite o cupom VOLTEI5 para 5% de desconto em sua compra!`);
-    const phone = "5511999999999"; 
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    const message = `Olá ${cart.customerName}, vimos que você deixou alguns itens interessantes no carrinho da nossa loja. Podemos te ajudar a finalizar sua escolha? Aproveite o cupom VOLTEI5 para 5% de desconto em sua compra!`;
+    
+    // Se tivermos a prop de recuperação interna, usamos ela. Caso contrário, fallback para link externo.
+    if (onRecoverCart) {
+        // Assume que customerId contém o JID ou número se disponível, caso contrário tenta inferir.
+        // Se o sistema tiver integração real, o customerId/JID estaria vinculado.
+        const jid = cart.customerId.includes('@') ? cart.customerId : `${cart.customerId.replace(/\D/g, '')}@s.whatsapp.net`;
+        onRecoverCart(jid, message);
+    } else {
+        const encodedMsg = encodeURIComponent(message);
+        const phone = "5511999999999"; 
+        window.open(`https://wa.me/${phone}?text=${encodedMsg}`, '_blank');
+    }
   };
 
   const filteredCarts = groupedCarts.filter(cart => 
@@ -203,11 +212,8 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail }) 
                             <span className="text-gray-500 dark:text-gray-400">Total:</span>
                             <span className="text-primary">R$ {Number(selectedCart.total).toFixed(2)}</span>
                         </div>
-                        <button onClick={() => {
-                            if (onViewDetail) onViewDetail(selectedCart);
-                            else handleRecover(selectedCart);
-                        }} className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95">
-                            <EyeIcon/> Ver Jornada Completa
+                        <button onClick={() => handleRecover(selectedCart)} className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95">
+                            <ChatIcon/> Recuperar agora no Chat
                         </button>
                     </div>
                 </div>
