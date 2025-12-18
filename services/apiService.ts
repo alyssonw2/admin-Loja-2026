@@ -34,12 +34,10 @@ const REQUIRED_TABLES: TableSchema[] = [
             "status": "string"
         }
     },
-    // --- New Specific Table for Store Settings (Loja Tab) ---
     { 
         tableName: `${TABLE_PREFIX}store_settings`, 
         fields: { "config": "json", "store_id": "string|required" } 
     },
-    // --- Config Tables (Separated by Tab) ---
     { tableName: `${TABLE_PREFIX}cfg_general`, fields: { "config": "json", "store_id": "string|required" } },
     { tableName: `${TABLE_PREFIX}cfg_branding`, fields: { "config": "json", "store_id": "string|required" } },
     { tableName: `${TABLE_PREFIX}cfg_emails`, fields: { "config": "json", "store_id": "string|required" } },
@@ -51,7 +49,6 @@ const REQUIRED_TABLES: TableSchema[] = [
     { tableName: `${TABLE_PREFIX}cfg_mercadopago`, fields: { "config": "json", "store_id": "string|required" } },
     { tableName: `${TABLE_PREFIX}cfg_shippings`, fields: { "config": "json", "store_id": "string|required" } },
     { tableName: `${TABLE_PREFIX}cfg_ai`, fields: { "config": "json", "store_id": "string|required" } },
-    // --- Business Data Tables ---
     {
         tableName: `${TABLE_PREFIX}products`,
         fields: {
@@ -67,7 +64,7 @@ const REQUIRED_TABLES: TableSchema[] = [
             "material_id": "string",
             "color_id": "string",
             "description": "string",
-            "condition": "string", // Added condition field
+            "condition": "string",
             "status": "string",
             "width": "string",
             "height": "string",
@@ -77,7 +74,7 @@ const REQUIRED_TABLES: TableSchema[] = [
             "created_at": "string",
             "mercado_livre_status": "string",
             "mercado_livre_url": "string",
-            "store_id": "string|uuid|required"
+            "store_id": "string|required"
         }
     },
     {
@@ -128,8 +125,8 @@ const REQUIRED_TABLES: TableSchema[] = [
             "total": "string",
             "status": "string",
             "origin": "string",
-            "items": "string",
-            "events": "string",
+            "items": "json",
+            "events": "json",
             "gateway_transaction_id": "string",
             "tracking_code": "string",
             "invoice_url": "string",
@@ -199,8 +196,6 @@ const REQUIRED_TABLES: TableSchema[] = [
     }
 ];
 
-// --- Mappers ---
-
 const FIELD_MAP: Record<string, Record<string, string>> = {
     'products': {
         promotionalPrice: 'promotional_price',
@@ -211,8 +206,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
         colorId: 'color_id',
         createdAt: 'created_at',
         mercadoLivreStatus: 'mercado_livre_status',
-        mercadoLivreUrl: 'mercado_livre_url',
-        condition: 'condition' // Explicit map, though not strictly needed if names match
+        mercadoLivreUrl: 'mercado_livre_url'
     },
     'categories': {
         parentId: 'parent_id'
@@ -237,7 +231,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
         totalSpent: 'total_spent',
         avatarUrl: 'avatar_url',
         cpfCnpj: 'cpf_cnpj',
-        address: 'addres', // Map typescript 'address' to db 'addres'
+        address: 'addres',
         contacts: 'contacts'
     },
     'coupons': {
@@ -285,9 +279,6 @@ const mapFromDb = (table: string, data: any): any => {
     return newData;
 };
 
-
-// --- Helpers ---
-
 const getToken = () => localStorage.getItem('auth_token');
 const setToken = (token: string) => localStorage.setItem('auth_token', token);
 
@@ -311,8 +302,6 @@ const getStoreId = () => {
 
 const mockDelay = () => new Promise(resolve => setTimeout(resolve, 500));
 
-// --- Core API Methods ---
-
 async function request<T>(endpoint: string, options: RequestInit = {}, overrideToken?: string): Promise<T> {
     try {
         const response = await fetch(`${API_URL}${endpoint}`, {
@@ -321,73 +310,59 @@ async function request<T>(endpoint: string, options: RequestInit = {}, overrideT
         });
 
         if (!response.ok) {
-            // Include status text in error message for better debugging
-            throw { status: response.status, message: `${response.statusText} (${response.status})` };
+            const errorText = await response.text();
+            throw { status: response.status, message: errorText || response.statusText };
         }
 
         const text = await response.text();
         return text ? JSON.parse(text) : null;
 
     } catch (error: any) {
-        // Re-throw with a cleaner structure if possible, or just the error
         throw error;
     }
 }
 
-// --- Helper to Upsert Config Tables (Generic) ---
-// This function implements the logic: Check Exists -> Update or Create
 const upsertTableConfig = async (tableName: string, configData: any, storeId: string) => {
     const encodedStoreId = encodeURIComponent(storeId);
     
     try {
-        // 1. Verifique se existe um registro para esta loja
         let existing: any[] = [];
         try {
             const response = await request<any>(`/db/${tableName}?store_id=${encodedStoreId}&limit=1`);
-            // Handle different potential response structures (array directly or data property)
             if (Array.isArray(response)) {
                 existing = response;
             } else if (response && response.data && Array.isArray(response.data)) {
                  existing = response.data;
             }
-        } catch (e: any) {
-             // 404 is expected if table doesn't exist or empty query
-        }
+        } catch (e: any) {}
         
         const payload = {
             config: configData,
-            store_id: storeId
+            store_id: String(storeId)
         };
 
         if (existing && existing.length > 0) {
-            // 2. Se sim, atualize o registro com os novos dados
             const id = existing[0].id;
-            console.log(`[API] Updating config for ${tableName} (ID: ${id})`);
             await request(`/db/${tableName}/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
         } else {
-            // 3. Se não existir, crie um registro
-            console.log(`[API] Creating new config record for ${tableName}`);
             await request(`/db/${tableName}`, {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
         }
     } catch (e: any) {
-        console.warn(`[API] Failed to save config for ${tableName}. Using local state.`, e);
+        console.warn(`[API] Failed to save config for ${tableName}.`, e);
     }
 };
 
-// Legacy/Compatibility wrapper for existing cfg_ tables
-// Example: upsertConfig('branding', ...) saves to loja_cfg_branding
 const upsertConfig = async (tableNameSuffix: string, configData: any, storeId: string) => {
     const tableName = `${TABLE_PREFIX}cfg_${tableNameSuffix}`;
     await upsertTableConfig(tableName, configData, storeId);
 };
 
-// Generic Fetch Config
 const fetchTableConfig = async (tableName: string, storeId: string): Promise<any | null> => {
     try {
         const encodedStoreId = encodeURIComponent(storeId);
@@ -406,25 +381,19 @@ const fetchTableConfig = async (tableName: string, storeId: string): Promise<any
     }
 };
 
-// Legacy/Compatibility wrapper
 const fetchConfig = async (tableNameSuffix: string, storeId: string): Promise<any | null> => {
     const tableName = `${TABLE_PREFIX}cfg_${tableNameSuffix}`;
     return await fetchTableConfig(tableName, storeId);
 };
 
-
-// --- Internal Init ---
-
 const initializeDatabase = async () => {
     try {
-        // 1. Login Admin
         const data = await request<{token: string}>(`/db/login/adminlogin`, {
             method: 'POST',
             body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASS })
         });
         const systemToken = data.token;
 
-        // 2. Create Tables
         for (const schema of REQUIRED_TABLES) {
             try {
                  await request(`/db/create-table`, {
@@ -432,16 +401,12 @@ const initializeDatabase = async () => {
                     headers: { 'Authorization': `Bearer ${systemToken}` }, 
                     body: JSON.stringify(schema)
                 }, systemToken);
-            } catch (e) {
-                // Ignore if table already exists
-            }
+            } catch (e) {}
         }
     } catch (e) {
-        console.log("Database initialization skipped (API offline or Unauthorized). Using local mock data.");
+        console.log("Database initialization skipped.");
     }
 }
-
-// --- Auth & Initialization ---
 
 export const loginPanelUser = async (email: string, password: string, rememberMe: boolean = false): Promise<User> => {
     try {
@@ -515,8 +480,6 @@ export const authenticateAndInitializeSystem = async (setBootMessage: (message: 
     setBootMessage('Pronto para login.');
 };
 
-// --- Generic CRUD ---
-
 export const db = {
     getAll: async <T>(table: string, params: string = ''): Promise<T[]> => {
         try {
@@ -524,7 +487,7 @@ export const db = {
             let query = params;
             if (table !== 'stores' && storeId) {
                 const searchParams = new URLSearchParams(params);
-                searchParams.append('store_id', storeId);
+                searchParams.append('store_id', String(storeId));
                 query = searchParams.toString();
             }
             const res = await request<any>(`/db/${TABLE_PREFIX}${table}?${query}`);
@@ -544,15 +507,18 @@ export const db = {
             const payload = mapToDb(table, data);
             delete payload.id;
             delete payload._id;
-            if (table !== 'stores' && storeId) payload.store_id = storeId;
+            if (table !== 'stores' && storeId) payload.store_id = String(storeId);
             
-            // --- DEBUG LOG START ---
-            console.group(`[API] Creating Record in ${TABLE_PREFIX}${table}`);
-            console.log('Original Data:', data);
-            console.log('Mapped Payload:', payload);
-            console.log('Store ID:', storeId);
-            console.groupEnd();
-            // --- DEBUG LOG END ---
+            // Garantir tipos primitivos string para o banco onde o schema exige string
+            if (table === 'products') {
+                if (payload.price !== undefined) payload.price = String(payload.price);
+                if (payload.stock !== undefined) payload.stock = String(payload.stock);
+                if (payload.promotional_price !== undefined) payload.promotional_price = String(payload.promotional_price);
+                if (payload.weight !== undefined) payload.weight = String(payload.weight);
+                if (payload.width !== undefined) payload.width = String(payload.width);
+                if (payload.height !== undefined) payload.height = String(payload.height);
+                if (payload.depth !== undefined) payload.depth = String(payload.depth);
+            }
 
             const res = await request<T>(`/db/${TABLE_PREFIX}${table}`, {
                 method: 'POST',
@@ -560,7 +526,7 @@ export const db = {
             });
             return mapFromDb(table, res);
         } catch (e) {
-            console.error(`[API] Error creating record in ${table}`, e);
+            console.error(`[API] Error creating record in ${table}.`, e);
             await mockDelay();
             return { ...data, id: `mock-${Date.now()}` } as T;
         }
@@ -571,13 +537,25 @@ export const db = {
             const payload = mapToDb(table, data);
             delete payload.id;
             delete payload._id;
-            if (table !== 'stores' && storeId) payload.store_id = storeId;
+            if (table !== 'stores' && storeId) payload.store_id = String(storeId);
+            
+            if (table === 'products') {
+                if (payload.price !== undefined) payload.price = String(payload.price);
+                if (payload.stock !== undefined) payload.stock = String(payload.stock);
+                if (payload.promotional_price !== undefined) payload.promotional_price = String(payload.promotional_price);
+                if (payload.weight !== undefined) payload.weight = String(payload.weight);
+                if (payload.width !== undefined) payload.width = String(payload.width);
+                if (payload.height !== undefined) payload.height = String(payload.height);
+                if (payload.depth !== undefined) payload.depth = String(payload.depth);
+            }
+
             const res = await request<T>(`/db/${TABLE_PREFIX}${table}/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
             return mapFromDb(table, res);
         } catch (e) {
+            console.error(`[API] Error updating record in ${table}.`, e);
             await mockDelay();
             return { ...data, id } as T;
         }
@@ -590,50 +568,37 @@ export const db = {
         }
     },
     
-    // --- Specialized Settings Methods ---
     getSettings: async (): Promise<StoreSettings | null> => {
         try {
             const storeId = getStoreId();
             if (!storeId) return null;
             
-            console.log(`Loading split configuration settings for store: ${storeId}`);
-
-            // Fetch all sections in parallel
             const [
-                storeSettingsData, // General Store Settings (loja_store_settings)
+                storeSettingsData,
                 branding, 
                 email, 
                 info, 
                 seo, 
                 connectivity, 
                 social, 
-                integrations, // Generic integrations (ML, etc.)
-                mercadopago,  // Specific MP data
+                integrations,
+                mercadopago,
                 shipping, 
                 ai
             ] = await Promise.all([
                 fetchTableConfig(`${TABLE_PREFIX}store_settings`, storeId),
                 fetchConfig('branding', storeId),
-                // Using specific plural table for emails
                 fetchTableConfig(`${TABLE_PREFIX}cfg_emails`, storeId), 
-                // Changed to plural table for infos
                 fetchTableConfig(`${TABLE_PREFIX}cfg_infos`, storeId),
-                // Changed to plural table for seos
                 fetchTableConfig(`${TABLE_PREFIX}cfg_seos`, storeId),
-                // Changed to plural table for connectivities
                 fetchTableConfig(`${TABLE_PREFIX}cfg_connectivities`, storeId),
-                // Changed to plural table for socials
                 fetchTableConfig(`${TABLE_PREFIX}cfg_socials`, storeId),
-                // Changed to plural table for integrations
                 fetchTableConfig(`${TABLE_PREFIX}cfg_integrations`, storeId),
-                // New: Mercado Pago specific table
                 fetchTableConfig(`${TABLE_PREFIX}cfg_mercadopago`, storeId),
-                // Changed to plural table for shippings
                 fetchTableConfig(`${TABLE_PREFIX}cfg_shippings`, storeId),
                 fetchConfig('ai', storeId)
             ]);
 
-            // Construct defaults for complex objects to avoid undefined errors
             const defaultShipping = {
                 melhorEnvioToken: '',
                 additionalDays: 0,
@@ -652,7 +617,6 @@ export const db = {
                 mercadoLivreStatus: 'Desconectado' as const
             };
 
-            // Deep merge logic for shipping to ensure nested objects exist
             const shippingData = shipping || {};
             const finalShipping = {
                 ...defaultShipping,
@@ -663,24 +627,19 @@ export const db = {
                 }
             };
 
-            // Construct the monolithic object for the frontend
             const settings: Partial<StoreSettings> = {
-                // General Settings (Mapped from storeSettingsData)
                 storeName: storeSettingsData?.storeName || '',
                 domain: storeSettingsData?.domain || '',
                 address: storeSettingsData?.address || {},
-                // Sections
                 branding: branding || {},
                 email: email || {},
                 infoPages: info || {},
                 seo: seo || {},
                 connectivity: connectivity || {},
                 socialMedia: social || {},
-                // Merge general integrations with specific MP config and defaults
                 integrations: { ...defaultIntegrations, ...(integrations || {}), ...(mercadopago || {}) },
                 shipping: finalShipping,
                 ai: ai || {},
-                // Banners are handled via the banners table, added in hooks
                 banners: []
             };
 
@@ -698,9 +657,6 @@ export const db = {
             const storeId = getStoreId();
             if (!storeId) throw new Error("No Store ID");
 
-            console.log("Saving split configuration settings...");
-
-            // Separate Mercado Pago specific settings from other integrations
             const { 
               mercadoPagoPublicKey, 
               mercadoPagoToken, 
@@ -718,38 +674,25 @@ export const db = {
               mercadoPagoInterestRate6to12
             };
 
-            // Distribute the monolithic object into independent tables
-            // 'loja_store_settings' handles the general store data
             await Promise.all([
                 upsertTableConfig(`${TABLE_PREFIX}store_settings`, {
                     storeName: settings.storeName,
                     domain: settings.domain,
                     address: settings.address
-                }, storeId),
-                upsertConfig('branding', settings.branding, storeId),
-                // Using specific plural table for emails
-                upsertTableConfig(`${TABLE_PREFIX}cfg_emails`, settings.email, storeId),
-                // Changed to plural table for infos
-                upsertTableConfig(`${TABLE_PREFIX}cfg_infos`, settings.infoPages, storeId),
-                // Changed to plural table for seos
-                upsertTableConfig(`${TABLE_PREFIX}cfg_seos`, settings.seo, storeId),
-                // Changed to plural table for connectivities
-                upsertTableConfig(`${TABLE_PREFIX}cfg_connectivities`, settings.connectivity, storeId),
-                // Changed to plural table for socials
-                upsertTableConfig(`${TABLE_PREFIX}cfg_socials`, settings.socialMedia, storeId),
-                // Save general integrations (Mercado Livre) to loja_cfg_integrations
-                upsertTableConfig(`${TABLE_PREFIX}cfg_integrations`, otherIntegrations, storeId),
-                // Save MP specific data to new table
-                upsertTableConfig(`${TABLE_PREFIX}cfg_mercadopago`, mpSettings, storeId),
-                // Changed to plural table for shippings
-                upsertTableConfig(`${TABLE_PREFIX}cfg_shippings`, settings.shipping, storeId),
-                upsertConfig('ai', settings.ai, storeId)
+                }, String(storeId)),
+                upsertConfig('branding', settings.branding, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_emails`, settings.email, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_infos`, settings.infoPages, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_seos`, settings.seo, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_connectivities`, settings.connectivity, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_socials`, settings.socialMedia, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_integrations`, otherIntegrations, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_mercadopago`, mpSettings, String(storeId)),
+                upsertTableConfig(`${TABLE_PREFIX}cfg_shippings`, settings.shipping, String(storeId)),
+                upsertConfig('ai', settings.ai, String(storeId))
             ]);
 
-            console.log("Settings saved successfully (or fallback triggered).");
-
         } catch (e) {
-            // unexpected error in the main block
             console.warn("Falha ao salvar settings na API, simulando sucesso.", e);
             await mockDelay();
         }

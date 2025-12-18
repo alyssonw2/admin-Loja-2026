@@ -227,6 +227,10 @@ const App: React.FC = () => {
             materials={materials} addMaterial={addMaterial} updateMaterial={updateMaterial} deleteMaterial={deleteMaterial}
             colors={colors} addColor={addColor} updateColor={updateColor} deleteColor={deleteColor}
             showToast={showToast}
+            whatsappStatus={storeSettings.connectivity.whatsappStatus}
+            whatsappPhone={storeSettings.connectivity.whatsappPhone}
+            addProduct={addProduct}
+            updateProduct={updateProduct}
         />;
        case Page.AddEditProduct:
         return <ProductForm onBack={handleBackToProducts} onSave={handleSaveProduct} product={editingProduct} categories={categories} brands={brands} models={models} materials={materials} colors={colors} showToast={showToast} />;
@@ -246,6 +250,8 @@ const App: React.FC = () => {
           categories={categories} brands={brands} models={models} materials={materials} colors={colors}
           products={products} addProduct={addProduct} updateProduct={updateProduct}
         />;
+      case Page.MarketplaceMercadoLivre:
+        return <Marketplace settings={storeSettings} updateSettings={updateStoreSettings} products={products} updateProduct={updateProduct} showToast={showToast} />;
       case Page.MarketplaceMercadoLivre:
         return <Marketplace settings={storeSettings} updateSettings={updateStoreSettings} products={products} updateProduct={updateProduct} showToast={showToast} />;
       case Page.Profile:

@@ -1,11 +1,13 @@
 
-import React, { useState, useMemo } from 'react';
-import type { Product, Category, Brand, Model, Material, Color, Toast } from '../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import type { Product, Category, Brand, Model, Material, Color, Toast, WhatsAppProduct, StoreSettings } from '../types';
 import CategoryModal from '../components/CategoryModal';
 import ColorModal from '../components/ColorModal';
 import CatalogModal from '../components/CatalogModal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { PencilIcon, TrashIcon, ProductIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon } from '../components/icons/Icons';
+import ImportProductModal from '../components/ImportProductModal';
+import { PencilIcon, TrashIcon, ProductIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChatIcon, CheckCircleIcon } from '../components/icons/Icons';
+import * as whatsappService from '../services/whatsappService';
 
 type CatalogItem = { id: string; name: string };
 
@@ -84,6 +86,12 @@ interface ProductsProps {
   updateColor: (item: Color) => void;
   deleteColor: (id: string) => void;
   showToast: (message: string, type: Toast['type']) => void;
+
+  // WhatsApp Props
+  whatsappStatus?: StoreSettings['connectivity']['whatsappStatus'];
+  whatsappPhone?: string;
+  addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
+  updateProduct: (p: Product) => Promise<void>;
 }
 
 const Products: React.FC<ProductsProps> = (props) => {
@@ -91,6 +99,14 @@ const Products: React.FC<ProductsProps> = (props) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Product; direction: 'asc' | 'desc' } | null>(null);
   
+  // WhatsApp State
+  const [whatsappCatalog, setWhatsappCatalog] = useState<WhatsAppProduct[]>([]);
+  const [isFetchingCatalog, setIsFetchingCatalog] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [selectedWAProduct, setSelectedWAProduct] = useState<WhatsAppProduct | null>(null);
+  const [isBulkImport, setIsBulkImport] = useState(false);
+  const [bulkQueue, setBulkQueue] = useState<WhatsAppProduct[]>([]);
+
   // Specific Modals State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -108,7 +124,60 @@ const Products: React.FC<ProductsProps> = (props) => {
     item: CatalogItem | null;
   }>({ isOpen: false, type: null, item: null });
 
-  const { products, categories } = props;
+  const { products, categories, whatsappStatus, whatsappPhone } = props;
+
+  // --- WhatsApp Catalog Fetch Logic ---
+  const loadWhatsappCatalog = useCallback(async () => {
+    if (whatsappStatus !== 'Conectado' || !whatsappPhone) return;
+    setIsFetchingCatalog(true);
+    try {
+        const results = await whatsappService.getCatalog(whatsappPhone);
+        setWhatsappCatalog(results);
+    } catch (e) {
+        props.showToast("Erro ao carregar catálogo do WhatsApp.", "error");
+    } finally {
+        setIsFetchingCatalog(false);
+    }
+  }, [whatsappStatus, whatsappPhone, props]);
+
+  useEffect(() => {
+    if (activeTab === 'whatsapp_catalog') {
+        loadWhatsappCatalog();
+    }
+  }, [activeTab, loadWhatsappCatalog]);
+
+  const handleImportSingle = (waProd: WhatsAppProduct) => {
+    const existing = products.find(p => p.sku === waProd.sku);
+    if (existing) {
+        const updated = {
+            ...existing,
+            name: waProd.name,
+            price: waProd.price.toString(),
+            description: waProd.description || existing.description
+        };
+        props.updateProduct(updated);
+        props.showToast(`${waProd.name} sincronizado com dados do WhatsApp!`, "success");
+    } else {
+        setSelectedWAProduct(waProd);
+        setImportModalOpen(true);
+    }
+  };
+
+  const handleSaveImported = async (productData: Omit<Product, 'id'>) => {
+    await props.addProduct(productData);
+    
+    if (isBulkImport && bulkQueue.length > 1) {
+        const nextQueue = bulkQueue.slice(1);
+        setBulkQueue(nextQueue);
+        setSelectedWAProduct(nextQueue[0]);
+        setImportModalOpen(true);
+    } else {
+        setIsBulkImport(false);
+        setBulkQueue([]);
+        setSelectedWAProduct(null);
+        props.showToast("Importação concluída!", "success");
+    }
+  };
 
   // --- Search and Sort Logic ---
   const handleSort = (key: keyof Product) => {
@@ -281,7 +350,8 @@ const Products: React.FC<ProductsProps> = (props) => {
   }, [categories]);
 
   const tabs = [
-    { id: 'products', label: 'Produtos' },
+    { id: 'products', label: 'Produtos no Site' },
+    ...(whatsappStatus === 'Conectado' ? [{ id: 'whatsapp_catalog', label: 'Catálogo WhatsApp' }] : []),
     { id: 'categories', label: 'Categorias' },
     { id: 'brands', label: 'Marcas' },
     { id: 'models', label: 'Modelos' },
@@ -323,7 +393,13 @@ const Products: React.FC<ProductsProps> = (props) => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Gerenciar Produtos e Catálogos</h2>
         {activeTab === 'products' && (
             <button onClick={props.onAddProductClick} className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">
-              Adicionar Produto
+              Adicionar Produto Manualmente
+            </button>
+        )}
+        {activeTab === 'whatsapp_catalog' && (
+            <button onClick={loadWhatsappCatalog} disabled={isFetchingCatalog} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                <svg className={`w-4 h-4 ${isFetchingCatalog ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5m11 11v-5h-5m-1 1l-15-15"/></svg>
+                Sincronizar Lista
             </button>
         )}
         {activeTab === 'categories' && (
@@ -363,8 +439,9 @@ const Products: React.FC<ProductsProps> = (props) => {
                           activeTab === tab.id
                               ? 'border-primary text-primary'
                               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-400 dark:hover:border-gray-500'
-                      } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                      } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2`}
                   >
+                      {tab.id === 'whatsapp_catalog' && <ChatIcon className="w-4 h-4 text-green-500"/>}
                       {tab.label}
                   </button>
               ))}
@@ -379,7 +456,7 @@ const Products: React.FC<ProductsProps> = (props) => {
             </div>
             <input
               type="text"
-              placeholder="Buscar por nome ou SKU..."
+              placeholder="Buscar no site por nome ou SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 w-full md:w-1/2 lg:w-1/3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
@@ -448,6 +525,66 @@ const Products: React.FC<ProductsProps> = (props) => {
             </table>
           </div>
         </>
+      )}
+
+      {activeTab === 'whatsapp_catalog' && (
+        <div className="animate-fade-in">
+             <div className="mb-6 flex justify-between items-center bg-green-500/5 border border-green-500/10 p-4 rounded-xl">
+                <div className="flex items-center gap-3">
+                    <ChatIcon className="w-8 h-8 text-green-500"/>
+                    <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">Produtos Detectados no WhatsApp</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Estes itens estão no seu catálogo móvel. Importe-os para seu site agora.</p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="text-2xl font-bold text-primary">{whatsappCatalog.length}</p>
+                    <p className="text-xs uppercase font-bold text-gray-400">Total de Itens</p>
+                </div>
+             </div>
+             
+             {isFetchingCatalog ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="bg-gray-200 dark:bg-gray-800 h-72 rounded-2xl animate-pulse"></div>)}
+                </div>
+             ) : whatsappCatalog.length === 0 ? (
+                <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+                    <ChatIcon className="w-16 h-16 mx-auto text-gray-300 mb-4"/>
+                    <p className="text-gray-500 font-medium">Nenhum produto encontrado no catálogo do WhatsApp.</p>
+                </div>
+             ) : (
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                     {whatsappCatalog.map(item => {
+                         const isImported = products.some(p => p.sku === item.sku);
+                         return (
+                             <div key={item.id} className={`bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border transition-all flex flex-col group ${isImported ? 'border-green-500/30 shadow-sm' : 'border-transparent shadow-md hover:shadow-xl hover:-translate-y-1'}`}>
+                                 <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                     <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-105"/>
+                                     {isImported && (
+                                         <div className="absolute top-2 left-2 bg-green-500 text-white p-1.5 rounded-full shadow-lg flex items-center gap-1">
+                                             <CheckCircleIcon className="w-4 h-4" />
+                                             <span className="text-[10px] font-bold pr-1">No Site</span>
+                                         </div>
+                                     )}
+                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4 text-center">
+                                         <button type="button" onClick={() => handleImportSingle(item)} className="bg-white text-gray-900 px-6 py-2.5 rounded-xl text-sm font-bold shadow-2xl transition-transform active:scale-95">
+                                             {isImported ? 'Sincronizar Dados' : 'Importar para o Site'}
+                                         </button>
+                                     </div>
+                                 </div>
+                                 <div className="p-4 flex-1 flex flex-col">
+                                     <h4 className="font-bold text-gray-900 dark:text-white truncate">{item.name}</h4>
+                                     <div className="flex justify-between items-end mt-2">
+                                        <p className="text-primary font-extrabold text-lg">R$ {item.price.toFixed(2)}</p>
+                                        <p className="text-[10px] text-gray-400 font-mono">SKU: {item.sku || 'N/A'}</p>
+                                     </div>
+                                 </div>
+                             </div>
+                         );
+                     })}
+                 </div>
+             )}
+        </div>
       )}
 
       {activeTab === 'categories' && (
@@ -569,6 +706,20 @@ const Products: React.FC<ProductsProps> = (props) => {
         title={getCatalogModalTitle()}
         itemName={getCatalogItemName()}
         showToast={props.showToast}
+      />
+
+      <ImportProductModal 
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        waProduct={selectedWAProduct}
+        onSave={handleSaveImported}
+        categories={categories}
+        brands={props.brands}
+        models={props.models}
+        materials={props.materials}
+        colors={props.colors}
+        showToast={props.showToast}
+        isUpdate={products.some(p => p.sku === selectedWAProduct?.sku)}
       />
 
       <ConfirmationModal
