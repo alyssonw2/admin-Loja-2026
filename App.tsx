@@ -20,10 +20,11 @@ import CompleteSetup from './pages/CompleteSetup';
 import Profile from './pages/Profile';
 import AbandonedCarts from './pages/AbandonedCarts';
 import CartDetail from './pages/CartDetail';
-import { Page, Order, Customer, Product, Toast, User, Cart } from './types';
+import { Page, Order, Customer, Product, Toast, User, Cart, StoreSettings } from './types';
 import { useMockData } from './hooks/useMockData';
 import ToastContainer from './components/Toast';
 import * as apiService from './services/apiService';
+import * as whatsappService from './services/whatsappService';
 import Login from './pages/Login';
 
 const App: React.FC = () => {
@@ -37,6 +38,7 @@ const App: React.FC = () => {
   const [selectedCart, setSelectedCart] = useState<Cart | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [globalWhatsappStatus, setGlobalWhatsappStatus] = useState<StoreSettings['connectivity']['whatsappStatus']>('Desconectado');
   
   const [pendingStoreId, setPendingStoreId] = useState<number | string | null>(null);
   const [pendingZipCode, setPendingZipCode] = useState<string>('');
@@ -104,6 +106,33 @@ const App: React.FC = () => {
     addBanner, updateBanner, deleteBanner,
     analyticsData, analyticsPeriod, setAnalyticsPeriod,
   } = useMockData({ showToast, isAuthenticated: !!currentUser });
+
+  // Monitoramento do status do WhatsApp
+  useEffect(() => {
+    let interval: any;
+    
+    const checkStatus = async () => {
+      if (currentUser && storeSettings?.connectivity.whatsappPhone) {
+        const status = await whatsappService.getInstanceStatus(storeSettings.connectivity.whatsappPhone);
+        setGlobalWhatsappStatus(status);
+        
+        // Sincroniza o status localmente no objeto de settings se houver mudança
+        if (status !== storeSettings.connectivity.whatsappStatus) {
+            // Nota: Evitamos updateStoreSettings aqui para não gerar loop de salvamento, 
+            // apenas atualizamos o estado visual global que o Header consome.
+        }
+      }
+    };
+
+    if (currentUser && storeSettings) {
+      checkStatus();
+      interval = setInterval(checkStatus, 30000); // Verifica a cada 30 segundos
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [currentUser, storeSettings?.connectivity.whatsappPhone]);
 
   const handleLoginSuccess = useCallback((user: User) => {
     setCurrentUser(user);
@@ -229,7 +258,7 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case Page.Dashboard: return <Dashboard kpi={kpi} recentOrders={orders} salesData={analyticsData.chart} theme={theme} />;
-      case Page.Chat: return <Chat whatsappStatus={storeSettings.connectivity.whatsappStatus} whatsappPhone={storeSettings.connectivity.whatsappPhone} showToast={showToast} />;
+      case Page.Chat: return <Chat whatsappStatus={globalWhatsappStatus} whatsappPhone={storeSettings.connectivity.whatsappPhone} showToast={showToast} />;
       case Page.Products:
         return <Products 
             products={products} onAddProductClick={navigateToAddProduct} onEditProductClick={navigateToEditProduct} deleteProduct={deleteProduct}
@@ -239,7 +268,7 @@ const App: React.FC = () => {
             materials={materials} addMaterial={addMaterial} updateMaterial={updateMaterial} deleteMaterial={deleteMaterial}
             colors={colors} addColor={addColor} updateColor={updateColor} deleteColor={deleteColor}
             showToast={showToast}
-            whatsappStatus={storeSettings.connectivity.whatsappStatus}
+            whatsappStatus={globalWhatsappStatus}
             whatsappPhone={storeSettings.connectivity.whatsappPhone}
             addProduct={addProduct}
             updateProduct={updateProduct}
@@ -275,7 +304,15 @@ const App: React.FC = () => {
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 font-sans">
       <Sidebar currentPage={currentPage} setCurrentPage={handleNavigation} onLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header currentPage={currentPage} user={currentUser} onLogout={handleLogout} onNavigate={setCurrentPage} theme={theme} toggleTheme={toggleTheme} />
+        <Header 
+          currentPage={currentPage} 
+          user={currentUser} 
+          onLogout={handleLogout} 
+          onNavigate={setCurrentPage} 
+          theme={theme} 
+          toggleTheme={toggleTheme} 
+          whatsappStatus={globalWhatsappStatus}
+        />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900">
           <div key={currentPage} className="animate-fade-in min-h-full">{renderPage()}</div>
         </main>

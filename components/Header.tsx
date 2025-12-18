@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Page, User } from '../types';
-import { ChevronDownIcon, LogoutIcon, SunIcon, MoonIcon, RepeatUserIcon } from './icons/Icons';
+import { Page, User, StoreSettings } from '../types';
+import { ChevronDownIcon, LogoutIcon, SunIcon, MoonIcon, RepeatUserIcon, ChatIcon } from './icons/Icons';
 
 interface HeaderProps {
   currentPage: Page;
@@ -10,15 +10,41 @@ interface HeaderProps {
   onNavigate: (page: Page) => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  whatsappStatus: StoreSettings['connectivity']['whatsappStatus'];
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage, user, onLogout, onNavigate, theme, toggleTheme }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage, user, onLogout, onNavigate, theme, toggleTheme, whatsappStatus }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const getStatusColor = () => {
+    switch (whatsappStatus) {
+      case 'Conectado': return 'text-green-500';
+      case 'Conectando': return 'text-yellow-500 animate-pulse';
+      case 'Desconectado': return 'text-red-500';
+      default: return 'text-gray-400';
+    }
+  };
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm dark:shadow-md p-6 flex justify-between items-center relative z-20 border-b border-gray-200 dark:border-gray-700">
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{currentPage}</h2>
       <div className="flex items-center space-x-4">
+        {/* WhatsApp Status Icon */}
+        <div 
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 cursor-help group relative transition-all`}
+          title={`WhatsApp: ${whatsappStatus}`}
+        >
+          <ChatIcon className={`w-5 h-5 ${getStatusColor()}`} />
+          <span className="text-[10px] font-bold uppercase hidden md:inline-block dark:text-gray-300">WA {whatsappStatus}</span>
+          
+          {/* Tooltip detail */}
+          <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900 text-white text-[10px] p-2 rounded shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-30">
+            {whatsappStatus === 'Conectado' ? 'Instância ativa e pronta para uso.' : 
+             whatsappStatus === 'Conectando' ? 'Aguardando pareamento ou conexão...' : 
+             'Instância desconectada ou inexistente.'}
+          </div>
+        </div>
+
          <button onClick={toggleTheme} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
             {theme === 'dark' ? <SunIcon className="w-6 h-6 text-yellow-400" /> : <MoonIcon className="w-6 h-6 text-gray-700" />}
          </button>
