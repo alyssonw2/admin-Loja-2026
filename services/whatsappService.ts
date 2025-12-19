@@ -106,7 +106,7 @@ export const getMessagesForChat = async (instanceName: string, chatId: string): 
     try {
         const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/messages/${chatId}`);
         const data = await response.json();
-        
+        console.log(data)
         // Se a API retornar um objeto com success: true e lista de mensagens
         if (data.success && data.messages) {
             return data.messages;

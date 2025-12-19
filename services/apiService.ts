@@ -624,6 +624,13 @@ export const db = {
                 mercadoPagoInstallmentsWithoutInterest: 3,
                 mercadoPagoInterestRate3to6: 6,
                 mercadoPagoInterestRate6to12: 12,
+                mercadoPagoMethods: {
+                  pix: true,
+                  creditCard: true,
+                  debitCard: true,
+                  boleto: true
+                },
+                mercadoPagoPixDiscountPercent: 0,
                 mercadoLivreUser: '',
                 mercadoLivreToken: '',
                 mercadoLivreStatus: 'Desconectado' as const
@@ -675,6 +682,8 @@ export const db = {
               mercadoPagoInstallmentsWithoutInterest,
               mercadoPagoInterestRate3to6,
               mercadoPagoInterestRate6to12,
+              mercadoPagoMethods,
+              mercadoPagoPixDiscountPercent,
               ...otherIntegrations 
             } = settings.integrations;
             
@@ -683,7 +692,9 @@ export const db = {
               mercadoPagoToken,
               mercadoPagoInstallmentsWithoutInterest,
               mercadoPagoInterestRate3to6,
-              mercadoPagoInterestRate6to12
+              mercadoPagoInterestRate6to12,
+              mercadoPagoMethods,
+              mercadoPagoPixDiscountPercent
             };
 
             await Promise.all([

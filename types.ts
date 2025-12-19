@@ -207,6 +207,10 @@ export interface ChatMessage {
   timestamp: string;
   mediaUrl?: string;
   mediaType?: 'image' | 'video' | 'audio' | 'sticker' | 'document';
+  quoted?: {
+    text: string;
+    sender?: string;
+  };
 }
 
 export interface QuestionAndAnswer {
@@ -266,6 +270,13 @@ export interface StoreSettings {
     mercadoPagoInstallmentsWithoutInterest: number;
     mercadoPagoInterestRate3to6: number;
     mercadoPagoInterestRate6to12: number;
+    mercadoPagoMethods: {
+      pix: boolean;
+      creditCard: boolean;
+      debitCard: boolean;
+      boleto: boolean;
+    };
+    mercadoPagoPixDiscountPercent: number;
     mercadoLivreUser: string; 
     mercadoLivreToken: string; 
     mercadoLivreStatus: 'Conectado' | 'Desconectado' | 'Conectando'; 

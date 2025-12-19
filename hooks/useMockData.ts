@@ -38,6 +38,13 @@ const DEFAULT_SETTINGS: StoreSettings = {
       mercadoPagoInstallmentsWithoutInterest: 3,
       mercadoPagoInterestRate3to6: 6,
       mercadoPagoInterestRate6to12: 12,
+      mercadoPagoMethods: {
+        pix: true,
+        creditCard: true,
+        debitCard: true,
+        boleto: true
+      },
+      mercadoPagoPixDiscountPercent: 0,
       mercadoLivreUser: '', 
       mercadoLivreToken: '', 
       mercadoLivreStatus: 'Desconectado' 
@@ -422,7 +429,8 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
   const couponCrud = {
       add: async (item: Omit<Coupon, 'id'>) => {
           try {
-            await db.create('coupons', item);
+            const newItem = { ...item };
+            await db.create('coupons', newItem);
             showToast('Cupom adicionado', 'success');
             reloadCoupons();
           } catch(e) { showToast('Erro ao adicionar cupom', 'error'); }

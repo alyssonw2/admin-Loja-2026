@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { StoreSettings, Banner, Toast, WhatsAppProduct, Category, Brand, Model, Material, Color, Product } from '../types';
-import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon, ChatIcon, CheckCircleIcon, ArrowRightIcon, CpuChipIcon } from '../components/icons/Icons';
+import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon, ChatIcon, CheckCircleIcon, ArrowRightIcon, CpuChipIcon, DollarSignIcon } from '../components/icons/Icons';
 import { createInstance, getInstanceStatus, connectInstance, getQrCode, disconnectInstance, getCatalog } from '../services/whatsappService';
 import ImportProductModal from '../components/ImportProductModal';
 import BannerModal from '../components/BannerModal';
@@ -853,6 +853,49 @@ const Settings: React.FC<SettingsProps> = ({
                   <div className="space-y-6">
                     <InputField label="Public Key" name="mercadoPagoPublicKey" value={formData.integrations.mercadoPagoPublicKey} section="integrations" placeholder="APP_USR-..." onChange={handleInputChange} />
                     <InputField label="Access Token" name="mercadoPagoToken" value={formData.integrations.mercadoPagoToken} section="integrations" type="password" placeholder="APP_USR-..." onChange={handleInputChange} />
+                  </div>
+                </section>
+
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4">Métodos de Pagamento Ativos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { id: 'pix', label: 'PIX', name: 'mercadoPagoMethods.pix' },
+                      { id: 'creditCard', label: 'Crédito', name: 'mercadoPagoMethods.creditCard' },
+                      { id: 'debitCard', label: 'Débito', name: 'mercadoPagoMethods.debitCard' },
+                      { id: 'boleto', label: 'Boleto', name: 'mercadoPagoMethods.boleto' },
+                    ].map(method => (
+                      <div key={method.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600/50">
+                        <label htmlFor={method.id} className="text-sm font-bold text-gray-700 dark:text-gray-200">{method.label}</label>
+                        <input 
+                          id={method.id}
+                          type="checkbox" 
+                          name={method.name}
+                          data-section="integrations"
+                          checked={(formData.integrations.mercadoPagoMethods as any)[method.id]}
+                          onChange={handleInputChange}
+                          className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4 flex items-center gap-2">
+                     Promoções de Pagamento
+                  </h3>
+                  <div className="max-w-md">
+                    <InputField 
+                      label="Desconto em PIX (%)" 
+                      name="mercadoPagoPixDiscountPercent" 
+                      value={formData.integrations.mercadoPagoPixDiscountPercent} 
+                      section="integrations" 
+                      type="number" 
+                      placeholder="Ex: 5" 
+                      onChange={handleInputChange} 
+                    />
+                    <p className="text-xs text-gray-500 mt-2 italic">Dica: Oferecer descontos no PIX incentiva pagamentos à vista e melhora seu fluxo de caixa.</p>
                   </div>
                 </section>
 
