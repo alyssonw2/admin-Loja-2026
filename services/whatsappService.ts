@@ -72,7 +72,6 @@ export const getContactInfo = async (instanceName: string, jid: string): Promise
     }
 };
 
-// Auxiliar para limpar número mantendo IDs especiais como @lid
 const getTargetIdentifier = (jid: string) => {
     if (jid.includes('@lid')) return jid;
     return jid.split('@')[0].replace(/\D/g, '');
@@ -108,13 +107,15 @@ export const getMessagesForChat = async (instanceName: string, chatId: string): 
         const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/messages/${chatId}`);
         const data = await response.json();
         
+        // Se a API retornar um objeto com success: true e lista de mensagens
         if (data.success && data.messages) {
             return data.messages;
         }
         
+        // Se a API retornar diretamente o array
         return Array.isArray(data) ? data : (data.messages || []);
     } catch (error) {
-        console.error(`Erro ao buscar mensagens da rota por UID para ${chatId}:`, error);
+        console.error(`Erro ao buscar mensagens para ${chatId}:`, error);
         return [];
     }
 };
