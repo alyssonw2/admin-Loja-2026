@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Order, AnalyticsChartDataPoint } from '../types';
 import DashboardCard from '../components/DashboardCard';

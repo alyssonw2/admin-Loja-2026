@@ -29,10 +29,10 @@ const FONT_OPTIONS = [
 ];
 
 const ColorPicker: React.FC<{label: string, name: string, value: string, section: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({label, name, value, section, onChange}) => (
-  <div className="flex items-center justify-between bg-gray-700/50 p-4 rounded-xl border border-gray-600/50">
-      <label htmlFor={name} className="text-sm font-medium text-gray-200">{label}</label>
+  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600/50">
+      <label htmlFor={name} className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</label>
       <div className="flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-400">{value.toUpperCase()}</span>
+          <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{value.toUpperCase()}</span>
           <input 
             id={name} 
             type="color" 
@@ -48,15 +48,15 @@ const ColorPicker: React.FC<{label: string, name: string, value: string, section
 
 const InputField: React.FC<{label: string, name: string, value: string | number, section: string, placeholder?: string, type?: string, disabled?: boolean, onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void}> = ({label, name, value, section, placeholder = '', type = 'text', disabled = false, onChange}) => (
   <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-      <input id={name} type={type} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-600 disabled:cursor-not-allowed text-white" />
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{label}</label>
+      <input id={name} type={type} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-gray-900 dark:text-indigo-50" />
   </div>
 );
 
 const TextAreaField: React.FC<{label: string, name: string, value: string, section: string, placeholder?: string, rows?: number, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void}> = ({label, name, value, section, placeholder = '', rows = 4, onChange}) => (
   <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-      <textarea id={name} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} rows={rows} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white resize-none font-mono text-sm" />
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{label}</label>
+      <textarea id={name} name={name} data-section={section} value={value} onChange={onChange} placeholder={placeholder} rows={rows} className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-indigo-50 resize-none font-mono text-sm" />
   </div>
 );
 
@@ -93,21 +93,18 @@ const Settings: React.FC<SettingsProps> = ({
     }
   }, [settings]);
 
-  // Limpa o polling ao desmontar
   useEffect(() => {
     return () => {
         if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, []);
 
-  // Verifica status automaticamente ao entrar na aba de conectividade
   useEffect(() => {
     const checkStatus = async () => {
         if (activeTab === 'conectividade' && formData.connectivity.whatsappPhone) {
             try {
                 const status = await getInstanceStatus(formData.connectivity.whatsappPhone);
                 setConnectionStatus(status);
-                // Se detectar que conectou, para qualquer polling de QR pendente
                 if (status === 'Conectado' && pollingRef.current) {
                     clearInterval(pollingRef.current);
                     setQrCode(null);
@@ -124,8 +121,8 @@ const Settings: React.FC<SettingsProps> = ({
     if (connectionStatus !== 'Conectado' || !formData.connectivity.whatsappPhone) return;
     setIsFetchingCatalog(true);
     try {
-        const products = await getCatalog(instanceName);
-        setWhatsappCatalog(products);
+        const productsList = await getCatalog(instanceName);
+        setWhatsappCatalog(productsList);
     } catch (e) {
         showToast("Erro ao carregar catálogo do WhatsApp.", "error");
     } finally {
@@ -186,7 +183,6 @@ const Settings: React.FC<SettingsProps> = ({
                   setQrCode(data.qrCode);
                   setConnectionStatus('Conectando');
               } else {
-                  // Se não tem QR Code, pode ser que já conectou
                   setQrCode(null);
                   setConnectionStatus('Conectado');
                   clearInterval(pollingRef.current);
@@ -342,7 +338,6 @@ const Settings: React.FC<SettingsProps> = ({
     setIsSaving(true);
     
     try {
-        // Se o telefone estiver presente, garante que a instância foi criada
         if (formData.connectivity.whatsappPhone) {
             await createInstance(formData.connectivity.whatsappPhone);
         }
@@ -384,20 +379,20 @@ const Settings: React.FC<SettingsProps> = ({
 
   const getStatusColor = (status: string) => {
       switch(status) {
-          case 'Conectado': return 'bg-green-500/20 text-green-400';
-          case 'Conectando': return 'bg-yellow-500/20 text-yellow-400';
-          default: return 'bg-red-500/20 text-red-400';
+          case 'Conectado': return 'bg-green-500/20 text-green-600 dark:text-green-400';
+          case 'Conectando': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400';
+          default: return 'bg-red-500/20 text-red-600 dark:text-red-400';
       }
   };
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-white mb-6">Configurações da Loja</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-indigo-50 mb-6">Configurações da Loja</h2>
       <div className="flex flex-col lg:flex-row gap-8">
         <aside className="lg:w-1/4">
           <nav className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2">
             {tabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-primary text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-primary text-indigo-50 shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-indigo-50'}`}>
                 <tab.icon className="w-5 h-5 mr-3 shrink-0" />
                 <span className="font-medium text-sm">{tab.label}</span>
               </button>
@@ -406,11 +401,11 @@ const Settings: React.FC<SettingsProps> = ({
         </aside>
 
         <main className="flex-1">
-          <div className="bg-gray-800 p-8 rounded-lg shadow-lg">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
             {activeTab === 'loja' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Dados da Loja</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">Dados da Loja</h3>
                   <InputField label="Nome da Loja" name="storeName" value={formData.storeName} section="" onChange={handleInputChange} />
                   <InputField label="Domínio" name="domain" value={formData.domain || ''} section="" placeholder="www.sualoja.com.br" onChange={handleInputChange} />
                   
@@ -419,8 +414,8 @@ const Settings: React.FC<SettingsProps> = ({
                      <InputField label="Estado" name="state" value={formData.address.state} section="address" onChange={handleInputChange} />
                   </div>
                 </section>
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -430,28 +425,28 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'cores' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <div>
-                    <h3 className="text-xl font-semibold text-white mb-6">Identidade Visual</h3>
-                    <div className="flex flex-col md:flex-row items-center gap-8 bg-gray-700/30 p-6 rounded-2xl border border-gray-600/50">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">Identidade Visual</h3>
+                    <div className="flex flex-col md:flex-row items-center gap-8 bg-gray-50 dark:bg-gray-700/30 p-6 rounded-2xl border border-gray-200 dark:border-gray-600/50">
                         <div className="relative group">
-                            <div className="w-40 h-40 bg-gray-700 rounded-2xl overflow-hidden border-2 border-dashed border-gray-500 flex items-center justify-center">
+                            <div className="w-40 h-40 bg-gray-200 dark:bg-gray-700 rounded-2xl overflow-hidden border-2 border-dashed border-gray-400 dark:border-gray-500 flex items-center justify-center">
                                 {formData.branding.logoUrl ? (
                                     <img src={formData.branding.logoUrl} className="max-w-full max-h-full object-contain p-2" />
                                 ) : (
-                                    <PhotographIcon className="w-12 h-12 text-gray-500" />
+                                    <PhotographIcon className="w-12 h-12 text-gray-400" />
                                 )}
                             </div>
                             <button 
                                 type="button" 
                                 onClick={() => fileInputRef.current?.click()}
-                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold rounded-2xl"
+                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-indigo-50 text-xs font-bold rounded-2xl"
                             >
                                 Alterar Logo
                             </button>
                             <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
                         </div>
                         <div className="flex-1 space-y-2">
-                            <h4 className="font-bold text-gray-200">Logo da Loja</h4>
-                            <p className="text-sm text-gray-400">Recomendamos imagens em PNG com fundo transparente. Tamanho ideal: 400x400px.</p>
+                            <h4 className="font-bold text-gray-800 dark:text-gray-200">Logo da Loja</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Recomendamos imagens em PNG com fundo transparente. Tamanho ideal: 400x400px.</p>
                             <button type="button" onClick={() => fileInputRef.current?.click()} className="text-primary hover:text-primary-light text-sm font-bold">Enviar novo arquivo</button>
                         </div>
                     </div>
@@ -466,31 +461,31 @@ const Settings: React.FC<SettingsProps> = ({
                     <ColorPicker label="Fundo do Cabeçalho" name="headerBackgroundColor" value={formData.branding.headerBackgroundColor} section="branding" onChange={handleInputChange} />
                 </div>
 
-                <section className="space-y-6 pt-6 border-t border-gray-700">
-                    <h3 className="text-xl font-semibold text-white mb-4">Tipografia</h3>
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4">Tipografia</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="headingFont" className="block text-sm font-medium text-gray-300 mb-2">Fonte para Títulos</label>
+                            <label htmlFor="headingFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fonte para Títulos</label>
                             <select 
                                 id="headingFont" 
                                 name="headingFont" 
                                 data-section="branding" 
                                 value={formData.branding.headingFont} 
                                 onChange={handleInputChange}
-                                className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white"
+                                className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-indigo-50"
                             >
                                 {FONT_OPTIONS.map(font => <option key={font} value={font}>{font}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="bodyFont" className="block text-sm font-medium text-gray-300 mb-2">Fonte para o Corpo</label>
+                            <label htmlFor="bodyFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fonte para o Corpo</label>
                             <select 
                                 id="bodyFont" 
                                 name="bodyFont" 
                                 data-section="branding" 
                                 value={formData.branding.bodyFont} 
                                 onChange={handleInputChange}
-                                className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white"
+                                className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-indigo-50"
                             >
                                 {FONT_OPTIONS.map(font => <option key={font} value={font}>{font}</option>)}
                             </select>
@@ -498,8 +493,8 @@ const Settings: React.FC<SettingsProps> = ({
                     </div>
                 </section>
 
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -510,13 +505,13 @@ const Settings: React.FC<SettingsProps> = ({
                 <section className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h3 className="text-xl font-semibold text-white">Gerenciar Banners</h3>
-                            <p className="text-gray-400 text-sm">Banners rotativos para a página inicial.</p>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50">Gerenciar Banners</h3>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Banners rotativos para a página inicial.</p>
                         </div>
                         <button 
                             type="button" 
                             onClick={() => handleOpenBannerModal()}
-                            className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20"
+                            className="bg-primary hover:bg-primary-dark text-indigo-50 px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20"
                         >
                             Adicionar Banner
                         </button>
@@ -524,26 +519,26 @@ const Settings: React.FC<SettingsProps> = ({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {formData.banners.length === 0 ? (
-                            <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-700 rounded-2xl bg-gray-700/20">
-                                <PhotographIcon className="w-16 h-16 mx-auto text-gray-600 mb-4" />
+                            <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-700/20">
+                                <PhotographIcon className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                                 <p className="text-gray-500 font-medium">Nenhum banner cadastrado ainda.</p>
                             </div>
                         ) : (
                             formData.banners.map((banner) => (
-                                <div key={banner.id} className="bg-gray-700/50 rounded-2xl overflow-hidden border border-gray-600 flex flex-col group shadow-sm hover:shadow-xl transition-all">
-                                    <div className="relative aspect-[3/1] overflow-hidden bg-gray-900">
+                                <div key={banner.id} className="bg-white dark:bg-gray-700/50 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-600 flex flex-col group shadow-sm hover:shadow-xl transition-all">
+                                    <div className="relative aspect-[3/1] overflow-hidden bg-gray-100 dark:bg-gray-900">
                                         <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                                             <button 
                                                 onClick={() => handleOpenBannerModal(banner)}
-                                                className="bg-white text-gray-900 p-2.5 rounded-full hover:bg-primary hover:text-white transition-colors"
+                                                className="bg-white text-gray-900 p-2.5 rounded-full hover:bg-primary hover:text-indigo-50 transition-colors"
                                                 title="Editar Banner"
                                             >
                                                 <PencilIcon className="w-5 h-5" />
                                             </button>
                                             <button 
                                                 onClick={() => handleDeleteBanner(banner.id)}
-                                                className="bg-white text-red-600 p-2.5 rounded-full hover:bg-red-600 hover:text-white transition-colors"
+                                                className="bg-white text-red-600 p-2.5 rounded-full hover:bg-red-600 hover:text-indigo-50 transition-colors"
                                                 title="Excluir Banner"
                                             >
                                                 <TrashIcon className="w-5 h-5" />
@@ -551,8 +546,8 @@ const Settings: React.FC<SettingsProps> = ({
                                         </div>
                                     </div>
                                     <div className="p-4 flex-1">
-                                        <h4 className="font-bold text-white text-lg truncate">{banner.title}</h4>
-                                        <p className="text-gray-400 text-xs line-clamp-2 mt-1 mb-3">{banner.description || 'Sem descrição'}</p>
+                                        <h4 className="font-bold text-gray-900 dark:text-indigo-50 text-lg truncate">{banner.title}</h4>
+                                        <p className="text-gray-500 dark:text-gray-400 text-xs line-clamp-2 mt-1 mb-3">{banner.description || 'Sem descrição'}</p>
                                         {banner.buttonText && (
                                             <div className="flex items-center gap-2 text-primary font-bold text-sm">
                                                 {banner.buttonText} <ArrowRightIcon className="w-4 h-4" />
@@ -569,7 +564,7 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'email' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Configurações de E-mail (SMTP)</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">Configurações de E-mail (SMTP)</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-2">
                         <InputField label="Servidor SMTP" name="smtpHost" value={formData.email.smtpHost} section="email" placeholder="smtp.exemplo.com" onChange={handleInputChange} />
@@ -585,13 +580,13 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
 
-                <section className="space-y-6 pt-6 border-t border-gray-700">
-                  <h3 className="text-xl font-semibold text-white mb-4">Templates de Notificação</h3>
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4">Templates de Notificação</h3>
                   <TextAreaField label="Corpo do E-mail de Confirmação de Pedido" name="purchaseConfirmationBody" value={formData.email.purchaseConfirmationBody} section="email" rows={8} onChange={handleInputChange} />
                 </section>
 
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -601,8 +596,8 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'info' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Páginas Institucionais</h3>
-                  <p className="text-sm text-gray-400 -mt-4">Esses textos serão exibidos nas páginas correspondentes da sua loja online.</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">Páginas Institucionais</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 -mt-4">Esses textos serão exibidos nas páginas correspondentes da sua loja online.</p>
                   
                   <TextAreaField label="Sobre a Loja" name="about" value={formData.infoPages.about} section="infoPages" placeholder="Conte a história da sua marca, missão e valores..." rows={8} onChange={handleInputChange} />
                   
@@ -611,8 +606,8 @@ const Settings: React.FC<SettingsProps> = ({
                   <TextAreaField label="Trocas e Devoluções" name="returns" value={formData.infoPages.returns} section="infoPages" placeholder="Defina as regras para trocas e devoluções de produtos..." rows={6} onChange={handleInputChange} />
                 </section>
 
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -622,8 +617,8 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'seo' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">SEO e Indexação</h3>
-                  <p className="text-sm text-gray-400 -mt-4">Configure as ferramentas de marketing e rastreamento para sua loja.</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">SEO e Indexação</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 -mt-4">Configure as ferramentas de marketing e rastreamento para sua loja.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <InputField label="ID do Google Analytics" name="googleAnalyticsId" value={formData.seo.googleAnalyticsId} section="seo" placeholder="UA-XXXXXXX-X ou G-XXXXXXXX" onChange={handleInputChange} />
@@ -632,38 +627,38 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
 
-                <section className="space-y-6 pt-6 border-t border-gray-700">
-                  <h3 className="text-xl font-semibold text-white mb-4">Feeds de Produtos (XML)</h3>
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4">Feeds de Produtos (XML)</h3>
                   <div className="space-y-4">
-                      <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600 flex items-center justify-between">
+                      <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl border border-gray-200 dark:border-gray-600 flex items-center justify-between">
                           <div>
-                              <p className="text-xs font-bold text-gray-400 uppercase mb-1">Feed para Google Shopping</p>
+                              <p className="text-xs font-bold text-gray-500 uppercase mb-1">Feed para Google Shopping</p>
                               <code className="text-sm text-primary break-all">{formData.seo.googleXmlUrl || `${formData.domain}/feed/google.xml`}</code>
                           </div>
-                          <button type="button" onClick={() => copyToClipboard(formData.seo.googleXmlUrl || `${formData.domain}/feed/google.xml`)} className="p-2 hover:bg-gray-600 rounded-lg text-gray-300">
+                          <button type="button" onClick={() => copyToClipboard(formData.seo.googleXmlUrl || `${formData.domain}/feed/google.xml`)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-500 dark:text-gray-300">
                               <CodeBracketIcon className="w-5 h-5"/>
                           </button>
                       </div>
 
-                      <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600 flex items-center justify-between">
+                      <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl border border-gray-200 dark:border-gray-600 flex items-center justify-between">
                           <div>
-                              <p className="text-xs font-bold text-gray-400 uppercase mb-1">Feed para Facebook/Instagram</p>
+                              <p className="text-xs font-bold text-gray-500 uppercase mb-1">Feed para Facebook/Instagram</p>
                               <code className="text-sm text-primary break-all">{formData.seo.facebookXmlUrl || `${formData.domain}/feed/facebook.xml`}</code>
                           </div>
-                          <button type="button" onClick={() => copyToClipboard(formData.seo.facebookXmlUrl || `${formData.domain}/feed/facebook.xml`)} className="p-2 hover:bg-gray-600 rounded-lg text-gray-300">
+                          <button type="button" onClick={() => copyToClipboard(formData.seo.facebookXmlUrl || `${formData.domain}/feed/facebook.xml`)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-500 dark:text-gray-300">
                               <CodeBracketIcon className="w-5 h-5"/>
                           </button>
                       </div>
                   </div>
                 </section>
 
-                <section className="space-y-6 pt-6 border-t border-gray-700">
-                  <h3 className="text-xl font-semibold text-white mb-4">Scripts Customizados</h3>
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4">Scripts Customizados</h3>
                   <TextAreaField label="Scripts no <head>" name="customHeadScript" value={formData.seo.customHeadScript} section="seo" placeholder="Cole aqui seus scripts do Pixel do Facebook, Google Tag Manager, etc." rows={6} onChange={handleInputChange} />
                 </section>
 
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -672,9 +667,9 @@ const Settings: React.FC<SettingsProps> = ({
 
             {activeTab === 'conectividade' && (
                 <section className="animate-fade-in">
-                    <div className="flex space-x-1 bg-gray-700 p-1 rounded-lg mb-6 w-fit">
+                    <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg mb-6 w-fit">
                          {['conexao', 'treinamento', 'catalogo'].map(t => (
-                             <button key={t} type="button" onClick={() => setConnectivityTab(t as any)} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${connectivityTab === t ? 'bg-gray-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>
+                             <button key={t} type="button" onClick={() => setConnectivityTab(t as any)} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${connectivityTab === t ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-indigo-50 shadow' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-indigo-50'}`}>
                                  {t.charAt(0).toUpperCase() + t.slice(1)}
                              </button>
                          ))}
@@ -684,8 +679,8 @@ const Settings: React.FC<SettingsProps> = ({
                         <div className="space-y-6">
                              <InputField label="Telefone Whatsapp" name="whatsappPhone" value={formData.connectivity.whatsappPhone} section="connectivity" placeholder="Ex: 5511999999999" onChange={handleInputChange} />
                              
-                             <div className="flex items-center justify-between bg-gray-700 p-4 rounded-lg border border-gray-600">
-                                <span className="font-medium">Status da Instância</span>
+                             <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                                <span className="font-medium text-gray-700 dark:text-gray-300">Status da Instância</span>
                                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(connectionStatus)}`}>
                                     {connectionStatus}
                                 </span>
@@ -719,14 +714,14 @@ const Settings: React.FC<SettingsProps> = ({
                                         <button 
                                             type="button" 
                                             onClick={handleDisconnectWhatsApp} 
-                                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                            className="bg-red-600 hover:bg-red-700 text-indigo-50 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
                                         >
                                             <TrashIcon className="w-5 h-5"/> Desconectar
                                         </button>
                                         <button 
                                             type="button" 
                                             onClick={handleReconnectWhatsApp} 
-                                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                            className="bg-blue-600 hover:bg-blue-700 text-indigo-50 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
                                         >
                                             <ArrowRightIcon className="w-5 h-5 rotate-180"/> Reconectar
                                         </button>
@@ -737,11 +732,11 @@ const Settings: React.FC<SettingsProps> = ({
                                         type="button" 
                                         onClick={handleConnectWhatsApp} 
                                         disabled={isConnecting}
-                                        className="w-full col-span-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 disabled:bg-gray-600 flex items-center justify-center gap-2"
+                                        className="w-full col-span-full bg-green-600 hover:bg-green-700 text-indigo-50 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 disabled:bg-gray-400 flex items-center justify-center gap-2"
                                     >
                                         {isConnecting ? (
                                           <>
-                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            <svg className="animate-spin h-5 w-5 text-indigo-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                             Iniciando conexão...
                                           </>
                                         ) : (
@@ -754,8 +749,8 @@ const Settings: React.FC<SettingsProps> = ({
                                 )}
                              </div>
 
-                             <div className="border-t border-gray-700 pt-6 flex justify-end">
-                                <button onClick={handleSubmit} disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                             <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                                <button onClick={handleSubmit} disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                                     {isSaving ? 'Salvando...' : 'Salvar Configurações'}
                                 </button>
                             </div>
@@ -766,38 +761,38 @@ const Settings: React.FC<SettingsProps> = ({
                          <div className="animate-fade-in">
                              <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h3 className="text-xl font-semibold text-white">Catálogo do WhatsApp</h3>
-                                    <p className="text-gray-400 text-sm">Gerencie e importe produtos diretamente para sua loja.</p>
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50">Catálogo do WhatsApp</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm">Gerencie e importe produtos diretamente para sua loja.</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button type="button" onClick={handleImportAll} disabled={isFetchingCatalog || whatsappCatalog.length === 0} className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50">
+                                    <button type="button" onClick={handleImportAll} disabled={isFetchingCatalog || whatsappCatalog.length === 0} className="bg-primary hover:bg-primary-dark text-indigo-50 px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50">
                                         Importar / Sincronizar Tudo
                                     </button>
-                                    <button type="button" onClick={loadCatalog} disabled={isFetchingCatalog} className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors">
+                                    <button type="button" onClick={loadCatalog} disabled={isFetchingCatalog} className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-indigo-50 p-2 rounded-lg transition-colors">
                                         <svg className={`w-5 h-5 ${isFetchingCatalog ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5m11 11v-5h-5m-1 1l-15-15"/></svg>
                                     </button>
                                 </div>
                              </div>
                              
                              {connectionStatus !== 'Conectado' ? (
-                                 <div className="text-center p-12 bg-gray-700/50 rounded-xl border border-gray-600 border-dashed">
-                                     <ChatIcon className="w-12 h-12 mx-auto text-gray-500 mb-4"/>
-                                     <p className="text-gray-400">Conecte-se ao WhatsApp para visualizar e importar produtos.</p>
+                                 <div className="text-center p-12 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 border-dashed">
+                                     <ChatIcon className="w-12 h-12 mx-auto text-gray-400 mb-4"/>
+                                     <p className="text-gray-500 dark:text-gray-400">Conecte-se ao WhatsApp para visualizar e importar produtos.</p>
                                  </div>
                              ) : isFetchingCatalog ? (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {[1,2,3,4].map(i => <div key={i} className="bg-gray-700 h-64 rounded-xl animate-pulse"></div>)}
+                                    {[1,2,3,4].map(i => <div key={i} className="bg-gray-100 dark:bg-gray-700 h-64 rounded-xl animate-pulse"></div>)}
                                 </div>
                              ) : (
                                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                      {whatsappCatalog.map(item => {
                                          const isImported = products.some(p => p.sku === item.sku);
                                          return (
-                                             <div key={item.id} className={`bg-gray-700/50 rounded-xl overflow-hidden border transition-all flex flex-col group ${isImported ? 'border-green-500/30' : 'border-gray-600 hover:border-primary'}`}>
-                                                 <div className="relative aspect-square overflow-hidden bg-gray-600">
+                                             <div key={item.id} className={`bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden border transition-all flex flex-col group ${isImported ? 'border-green-500/30' : 'border-gray-200 dark:border-gray-600 hover:border-primary'}`}>
+                                                 <div className="relative aspect-square overflow-hidden bg-gray-200 dark:bg-gray-600">
                                                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-105"/>
                                                      {isImported && (
-                                                         <div className="absolute top-2 left-2 bg-green-500 text-white p-1 rounded-full shadow-lg">
+                                                         <div className="absolute top-2 left-2 bg-green-500 text-indigo-50 p-1 rounded-full shadow-lg">
                                                              <CheckCircleIcon className="w-4 h-4" />
                                                          </div>
                                                      )}
@@ -808,7 +803,7 @@ const Settings: React.FC<SettingsProps> = ({
                                                      </div>
                                                  </div>
                                                  <div className="p-3 flex-1 flex flex-col">
-                                                     <h4 className="font-semibold text-white truncate text-sm">{item.name}</h4>
+                                                     <h4 className="font-semibold text-gray-900 dark:text-indigo-50 truncate text-sm">{item.name}</h4>
                                                      <p className="text-primary font-bold mt-1">R$ {item.price.toFixed(2)}</p>
                                                      <p className="text-[10px] text-gray-500 mt-auto">SKU: {item.sku || 'Sem SKU'}</p>
                                                  </div>
@@ -825,8 +820,8 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'redes' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Redes Sociais</h3>
-                  <p className="text-sm text-gray-400 -mt-4">Insira o link completo dos perfis da sua loja.</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">Redes Sociais</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 -mt-4">Insira o link completo dos perfis da sua loja.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <InputField label="Instagram" name="instagram" value={formData.socialMedia.instagram} section="socialMedia" placeholder="https://instagram.com/sualoja" onChange={handleInputChange} />
@@ -835,8 +830,8 @@ const Settings: React.FC<SettingsProps> = ({
                     <InputField label="YouTube" name="youtube" value={formData.socialMedia.youtube} section="socialMedia" placeholder="https://youtube.com/c/sualoja" onChange={handleInputChange} />
                   </div>
                 </section>
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -846,12 +841,12 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'pagamento' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Integração Mercado Pago</h3>
-                  <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex gap-4">
-                    <div className="p-2 bg-blue-500 rounded-lg h-fit"><CreditCardIcon className="w-6 h-6 text-white"/></div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">Integração Mercado Pago</h3>
+                  <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 p-4 rounded-xl flex gap-4">
+                    <div className="p-2 bg-blue-500 rounded-lg h-fit"><CreditCardIcon className="w-6 h-6 text-indigo-50"/></div>
                     <div className="text-sm">
-                      <h4 className="font-bold text-blue-400">Credenciais</h4>
-                      <p className="text-gray-400 mt-1">Acesse o <a href="https://developers.mercadopago.com/panel" target="_blank" className="text-blue-400 hover:underline">Painel do Desenvolvedor</a> para obter suas chaves.</p>
+                      <h4 className="font-bold text-blue-600 dark:text-blue-400">Credenciais</h4>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">Acesse o <a href="https://developers.mercadopago.com/panel" target="_blank" className="text-blue-500 hover:underline">Painel do Desenvolvedor</a> para obter suas chaves.</p>
                     </div>
                   </div>
 
@@ -861,17 +856,17 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
 
-                <section className="space-y-6 pt-6 border-t border-gray-700">
-                  <h3 className="text-xl font-semibold text-white mb-4">Configuração de Parcelamento</h3>
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4">Configuração de Parcelamento</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Parcelas Sem Juros</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Parcelas Sem Juros</label>
                         <select 
                           name="mercadoPagoInstallmentsWithoutInterest" 
                           data-section="integrations" 
                           value={formData.integrations.mercadoPagoInstallmentsWithoutInterest} 
                           onChange={handleInputChange}
-                          className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-white"
+                          className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-indigo-50"
                         >
                           <option value={1}>À vista</option>
                           {[2,3,4,5,6,10,12].map(num => (
@@ -885,8 +880,8 @@ const Settings: React.FC<SettingsProps> = ({
                   <p className="text-xs text-gray-500 italic">Nota: A configuração "Sem Juros" define até qual parcela a taxa será 0%. Acima disso, serão aplicadas as taxas definidas.</p>
                 </section>
 
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -896,7 +891,7 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'frete' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Configuração de Frete</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6">Configuração de Frete</h3>
                   
                   <div className="space-y-6">
                     <InputField label="Token Melhor Envio" name="melhorEnvioToken" value={formData.shipping.melhorEnvioToken} section="shipping" type="password" placeholder="Cole seu token do Melhor Envio aqui..." onChange={handleInputChange} />
@@ -908,10 +903,10 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
 
-                <section className="space-y-6 pt-6 border-t border-gray-700">
-                  <h3 className="text-xl font-semibold text-white mb-4">Política de Frete Grátis</h3>
+                <section className="space-y-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-4">Política de Frete Grátis</h3>
                   <div className="space-y-6">
-                    <div className="flex items-center gap-3 bg-gray-700/50 p-4 rounded-xl border border-gray-600">
+                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
                         <input 
                             type="checkbox" 
                             id="shippingEnabled" 
@@ -919,9 +914,9 @@ const Settings: React.FC<SettingsProps> = ({
                             data-section="shipping"
                             checked={formData.shipping.freeShippingPolicy.enabled} 
                             onChange={handleInputChange}
-                            className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary"
+                            className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
                         />
-                        <label htmlFor="shippingEnabled" className="text-sm font-medium text-gray-200">Habilitar Frete Grátis</label>
+                        <label htmlFor="shippingEnabled" className="text-sm font-medium text-gray-700 dark:text-gray-200">Habilitar Frete Grátis</label>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -931,8 +926,8 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
 
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>
@@ -942,10 +937,10 @@ const Settings: React.FC<SettingsProps> = ({
             {activeTab === 'api' && (
               <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in">
                 <section className="space-y-6">
-                  <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-indigo-50 mb-6 flex items-center gap-2">
                     <CpuChipIcon className="text-primary"/> Assistente de IA (Gemini)
                   </h3>
-                  <p className="text-sm text-gray-400 -mt-4">Configure o cérebro da sua loja para gerar descrições e atender clientes.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 -mt-4">Configure o cérebro da sua loja para gerar descrições e atender clientes.</p>
 
                   <div className="space-y-6">
                     <InputField label="Nome do Assistente" name="assistantName" value={formData.ai.assistantName} section="ai" placeholder="Ex: VestiBot" onChange={handleInputChange} />
@@ -954,8 +949,8 @@ const Settings: React.FC<SettingsProps> = ({
                   </div>
                 </section>
 
-                <div className="border-t border-gray-700 pt-6 flex justify-end">
-                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-6 flex justify-end">
+                    <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-3 px-10 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
                 </div>

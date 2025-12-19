@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Cart } from '../types';
 import { ChevronLeftIcon, ShoppingCartIcon, ChatIcon, CustomerIcon, CalendarIcon } from '../components/icons/Icons';
 import SankeyFlowChart from '../components/SankeyFlowChart';
@@ -8,14 +8,23 @@ interface CartDetailProps {
   cart: Cart | null;
   onBack: () => void;
   theme: 'light' | 'dark';
-  // FIX: Added missing onRecoverCart prop to satisfy Type check in App.tsx
   onRecoverCart?: (jid: string, message: string) => void;
 }
 
 const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverCart }) => {
   if (!cart) return null;
 
-  // FIX: Updated handleRecover to use onRecoverCart if available, mirroring AbandonedCarts recovery logic
+  const items = useMemo(() => {
+    if (!cart?.items) return [];
+    if (Array.isArray(cart.items)) return cart.items;
+    try {
+      if (typeof cart.items === 'string') return JSON.parse(cart.items);
+    } catch (e) {
+      console.error("Failed to parse cart items", e);
+    }
+    return [];
+  }, [cart?.items]);
+
   const handleRecover = () => {
     const message = `Olá ${cart.customerName}, vimos que você deixou itens incríveis no carrinho! Use o cupom VOLTEI5 para 5% OFF e finalize agora.`;
     
@@ -23,8 +32,8 @@ const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverC
         const jid = cart.customerId.includes('@') ? cart.customerId : `${cart.customerId.replace(/\D/g, '')}@s.whatsapp.net`;
         onRecoverCart(jid, message);
     } else {
-        const encodedMsg = encodeURIComponent(message);
         const phone = "5511999999999"; 
+        const encodedMsg = encodeURIComponent(message);
         window.open(`https://wa.me/${phone}?text=${encodedMsg}`, '_blank');
     }
   };
@@ -41,13 +50,12 @@ const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverC
             <p className="text-gray-500 dark:text-gray-400">Rastreamento de passos até o abandono.</p>
           </div>
         </div>
-        <button onClick={handleRecover} className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all active:scale-95">
+        <button onClick={handleRecover} className="bg-green-600 hover:bg-green-700 text-indigo-50 font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all active:scale-95">
           <ChatIcon /> Recuperar via WhatsApp
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Lado Esquerdo: Info do Carrinho */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -55,7 +63,7 @@ const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverC
             </h3>
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(cart.customerName)}&background=random`} className="w-16 h-16 rounded-full" />
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(cart.customerName)}&background=random`} className="w-16 h-16 rounded-full border border-gray-100 dark:border-gray-600" />
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">{cart.customerName}</p>
                   <p className="text-sm text-gray-500 truncate">{cart.customerEmail}</p>
@@ -74,10 +82,10 @@ const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverC
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                Conteúdo do Carrinho
             </h3>
-            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-              {cart.items.map((item, idx) => (
+            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {items.map((item: any, idx: number) => (
                 <div key={idx} className="flex gap-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-transparent hover:border-primary/20 transition-all">
-                  <img src={item.imageUrl} className="w-14 h-14 rounded-lg object-cover bg-white" />
+                  <img src={item.imageUrl} className="w-14 h-14 rounded-lg object-cover bg-white border border-gray-200 dark:border-gray-600" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold dark:text-white truncate">{item.productName}</p>
                     <p className="text-xs text-gray-500">Qtd: {item.quantity} • {item.size}</p>
@@ -85,6 +93,7 @@ const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverC
                   </div>
                 </div>
               ))}
+              {items.length === 0 && <p className="text-gray-500 text-center py-4">Carrinho vazio.</p>}
             </div>
             <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
               <div className="flex justify-between items-end">
@@ -95,7 +104,6 @@ const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverC
           </div>
         </div>
 
-        {/* Lado Direito: Gráfico de Jornada */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
             <div className="flex justify-between items-center mb-8">

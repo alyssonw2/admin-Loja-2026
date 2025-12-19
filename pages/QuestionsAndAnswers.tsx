@@ -35,8 +35,8 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Mensagens e Dúvidas</h2>
-            <p className="text-sm text-gray-500">Perguntas enviadas por clientes através das páginas de produtos.</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-indigo-50">Mensagens e Dúvidas</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Perguntas enviadas por clientes através das páginas de produtos.</p>
         </div>
         <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg border border-primary/20 text-sm font-bold">
             {questions.length} Mensagens Recebidas
@@ -46,8 +46,8 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
       <div className="grid grid-cols-1 gap-6">
         {sortedQuestions.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-             <ChatIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-             <p className="text-gray-500 font-medium">Nenhuma pergunta encontrada no momento.</p>
+             <ChatIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+             <p className="text-gray-500 dark:text-gray-400 font-medium">Nenhuma pergunta encontrada no momento.</p>
           </div>
         ) : (
           sortedQuestions.map((q) => {
@@ -61,7 +61,7 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
                 <div className="p-6">
                   <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
                     <div className="flex items-start gap-4">
-                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-gray-200 dark:border-gray-600">
                           {customer?.avatarUrl ? (
                               <img src={customer.avatarUrl} alt={customer.name} className="w-full h-full object-cover" />
                           ) : (
@@ -69,24 +69,24 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
                           )}
                        </div>
                        <div>
-                          <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest mb-1">{date}</p>
+                          <p className="text-[10px] uppercase font-black text-gray-400 dark:text-gray-500 tracking-widest mb-1">{date}</p>
                           <p className="text-sm font-bold text-primary mb-1">
                               {customer ? customer.name : 'Cliente Visitante'}
                           </p>
-                          <p className="text-gray-900 dark:text-white font-medium leading-relaxed">{q.question_text}</p>
+                          <p className="text-gray-900 dark:text-indigo-50 font-medium leading-relaxed">{q.question_text}</p>
                        </div>
                     </div>
 
                     {product && (
                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 min-w-[240px]">
                           {product.media?.[0] ? (
-                             <img src={product.media[0].url} className="w-10 h-10 rounded-md object-cover" />
+                             <img src={product.media[0].url} className="w-10 h-10 rounded-md object-cover border border-gray-200 dark:border-gray-600" />
                           ) : (
                              <ProductIcon className="w-8 h-8 text-gray-400" />
                           )}
                           <div className="min-w-0">
                              <p className="text-[10px] text-gray-500 uppercase font-bold">Produto</p>
-                             <p className="text-xs font-bold dark:text-gray-200 truncate">{product.name}</p>
+                             <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate">{product.name}</p>
                           </div>
                        </div>
                     )}
@@ -95,8 +95,8 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
                   {hasAnswer ? (
                     <div className="mt-4 bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-900/20 relative">
                         <div className="flex items-center gap-2 mb-1">
-                           <CheckCircleIcon className="w-4 h-4 text-green-500"/>
-                           <span className="text-[10px] font-bold text-green-600 uppercase">Sua Resposta</span>
+                           <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-500"/>
+                           <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase">Sua Resposta</span>
                         </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 italic">{q.answer_text}</p>
                         <button 
@@ -112,13 +112,13 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
                           value={answerText}
                           onChange={(e) => setAnswerText(e.target.value)}
                           placeholder="Digite sua resposta aqui..."
-                          className="w-full bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:ring-1 focus:ring-primary outline-none"
+                          className="w-full bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-indigo-50 focus:ring-1 focus:ring-primary outline-none"
                           rows={3}
                           autoFocus
                        />
                        <div className="flex justify-end gap-3">
-                          <button onClick={() => setAnsweringId(null)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
-                          <button onClick={() => handleSendAnswer(q)} className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg">Enviar Resposta</button>
+                          <button onClick={() => setAnsweringId(null)} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-indigo-50">Cancelar</button>
+                          <button onClick={() => handleSendAnswer(q)} className="bg-primary hover:bg-primary-dark text-indigo-50 px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition-all active:scale-95">Enviar Resposta</button>
                        </div>
                     </div>
                   ) : (
@@ -126,7 +126,7 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
                        <button onClick={() => setAnsweringId(q.id)} className="text-sm font-bold text-primary hover:bg-primary/5 px-4 py-2 rounded-lg border border-primary/20 transition-colors">
                           Responder agora
                        </button>
-                       <button onClick={() => onDelete(q.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                       <button onClick={() => onDelete(q.id)} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors">
                           <TrashIcon className="w-5 h-5"/>
                        </button>
                     </div>

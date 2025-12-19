@@ -18,11 +18,15 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
 
     carts.forEach(cart => {
         const key = cart.customerId || cart.customerEmail;
+        const currentItems = Array.isArray(cart.items) ? cart.items : (typeof cart.items === 'string' ? JSON.parse(cart.items) : []);
+        
         if (map.has(key)) {
             const existing = map.get(key)!;
             
             const mergedItemsMap = new Map<string, CartItem>();
-            [...existing.items, ...cart.items].forEach(item => {
+            const existingItems = Array.isArray(existing.items) ? existing.items : (typeof existing.items === 'string' ? JSON.parse(existing.items) : []);
+            
+            [...existingItems, ...currentItems].forEach(item => {
                 const itemKey = `${item.productId}-${item.size || 'unique'}`;
                 if (mergedItemsMap.has(itemKey)) {
                     const found = mergedItemsMap.get(itemKey)!;
@@ -46,7 +50,7 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
                 updatedAt: latestUpdate
             });
         } else {
-            map.set(key, { ...cart });
+            map.set(key, { ...cart, items: currentItems });
         }
     });
 
@@ -66,10 +70,7 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
   const handleRecover = (cart: Cart) => {
     const message = `Olá ${cart.customerName}, vimos que você deixou alguns itens interessantes no carrinho da nossa loja. Podemos te ajudar a finalizar sua escolha? Aproveite o cupom VOLTEI5 para 5% de desconto em sua compra!`;
     
-    // Se tivermos a prop de recuperação interna, usamos ela. Caso contrário, fallback para link externo.
     if (onRecoverCart) {
-        // Assume que customerId contém o JID ou número se disponível, caso contrário tenta inferir.
-        // Se o sistema tiver integração real, o customerId/JID estaria vinculado.
         const jid = cart.customerId.includes('@') ? cart.customerId : `${cart.customerId.replace(/\D/g, '')}@s.whatsapp.net`;
         onRecoverCart(jid, message);
     } else {
@@ -87,6 +88,11 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
   const selectedCart = useMemo(() => {
     return groupedCarts.find(c => (c.customerId || c.customerEmail) === selectedCartId) || null;
   }, [groupedCarts, selectedCartId]);
+
+  const selectedItems = useMemo(() => {
+    if (!selectedCart?.items) return [];
+    return Array.isArray(selectedCart.items) ? selectedCart.items : (typeof selectedCart.items === 'string' ? JSON.parse(selectedCart.items) : []);
+  }, [selectedCart?.items]);
 
   return (
     <div className="p-8">
@@ -117,7 +123,7 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
                 />
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
                 <table className="w-full text-left">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -132,6 +138,7 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
                         <tr><td colSpan={4} className="text-center p-12 text-gray-500">Nenhum carrinho encontrado.</td></tr>
                     ) : (filteredCarts.map((cart) => {
                         const cartId = cart.customerId || cart.customerEmail;
+                        const cartItemsCount = Array.isArray(cart.items) ? cart.items.reduce((acc, i) => acc + i.quantity, 0) : 0;
                         return (
                             <tr 
                                 key={cartId} 
@@ -143,7 +150,7 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
                                     <p className="text-xs text-gray-500">Última atualização: {getTimeInCart(cart.updatedAt)} • {cart.customerEmail}</p>
                                 </td>
                                 <td className="p-4 text-center text-sm font-medium dark:text-gray-300">
-                                    {cart.items.reduce((acc, i) => acc + i.quantity, 0)} unid.
+                                    {cartItemsCount} unid.
                                 </td>
                                 <td className="p-4 text-right font-bold text-primary">R$ {Number(cart.total).toFixed(2)}</td>
                                 <td className="p-4 text-right">
@@ -191,9 +198,9 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
                     </div>
 
                     <div className="space-y-4 mb-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {selectedCart.items.map((item, idx) => (
+                        {selectedItems.map((item: any, idx: number) => (
                             <div key={idx} className="flex gap-3 items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition-all">
-                                <img src={item.imageUrl} alt={item.productName} className="w-14 h-14 rounded-md object-cover bg-gray-200 border border-gray-300 dark:border-gray-600"/>
+                                <img src={item.imageUrl} alt={item.productName} className="w-14 h-14 rounded-md object-cover bg-white border border-gray-200 dark:border-gray-600"/>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{item.productName}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -212,14 +219,14 @@ const AbandonedCarts: React.FC<AbandonedCartsProps> = ({ carts, onViewDetail, on
                             <span className="text-gray-500 dark:text-gray-400">Total:</span>
                             <span className="text-primary">R$ {Number(selectedCart.total).toFixed(2)}</span>
                         </div>
-                        <button onClick={() => handleRecover(selectedCart)} className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95">
+                        <button onClick={() => handleRecover(selectedCart)} className="w-full bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95">
                             <ChatIcon/> Recuperar agora no Chat
                         </button>
                     </div>
                 </div>
             ) : (
                 <div className="bg-gray-100 dark:bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-12 text-center h-full flex flex-col justify-center animate-pulse">
-                    <div className="bg-white dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <ShoppingCartIcon className="w-8 h-8 text-gray-400"/>
                     </div>
                     <p className="text-gray-500 font-medium">Selecione um cliente na lista para ver o carrinho unificado.</p>
