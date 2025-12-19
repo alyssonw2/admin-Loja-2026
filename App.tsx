@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
@@ -12,6 +12,7 @@ import CustomerProfile from './pages/CustomerProfile';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Chat from './pages/Chat';
+import QuestionsAndAnswers from './pages/QuestionsAndAnswers';
 import Coupons from './pages/Coupons';
 import Reviews from './pages/Reviews';
 import Marketplace from './pages/Marketplace';
@@ -23,8 +24,8 @@ import CartDetail from './pages/CartDetail';
 import { Page, Order, Customer, Product, Toast, User, Cart, StoreSettings } from './types';
 import { useMockData } from './hooks/useMockData';
 import ToastContainer from './components/Toast';
-import * as apiService from './services/apiService';
-import * as whatsappService from './services/whatsappService';
+import { authenticateAndInitializeSystem } from './services/apiService';
+import { getInstanceStatus, getChats } from './services/whatsappService';
 import Login from './pages/Login';
 
 const App: React.FC = () => {
@@ -45,6 +46,14 @@ const App: React.FC = () => {
 
   const [pendingStoreId, setPendingStoreId] = useState<number | string | null>(null);
   const [pendingZipCode, setPendingZipCode] = useState<string>('');
+
+  // Refs para monitoramento de mensagens não lidas
+  const lastProcessedMessagesRef = useRef<Record<string, string>>({});
+  const currentPageRef = useRef<Page>(Page.Landing);
+
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
   
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
@@ -70,7 +79,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        await apiService.authenticateAndInitializeSystem(setBootMessage);
+        await authenticateAndInitializeSystem(setBootMessage);
         setBootStatus('ready');
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Erro desconhecido na inicialização.';
@@ -81,8 +90,8 @@ const App: React.FC = () => {
     initializeApp();
   }, []);
 
-  const showToast = useCallback((message: string, type: Toast['type']) => {
-    const newToast: Toast = { id: Date.now(), message, type };
+  const showToast = useCallback((message: string, type: Toast['type'], onClick?: () => void) => {
+    const newToast: Toast = { id: Date.now(), message, type, onClick };
     setToasts(prev => [...prev, newToast]);
   }, []);
   
@@ -97,6 +106,7 @@ const App: React.FC = () => {
     orders, updateOrder,
     customers, addCustomer,
     carts,
+    questions, updateQuestion, deleteQuestion,
     kpi,
     categories, addCategory, updateCategory, deleteCategory,
     brands, addBrand, updateBrand, deleteBrand,
@@ -110,24 +120,69 @@ const App: React.FC = () => {
     analyticsData, analyticsPeriod, setAnalyticsPeriod,
   } = useMockData({ showToast, isAuthenticated: !!currentUser });
 
+  // Polling Global para WhatsApp (Status e Mensagens)
   useEffect(() => {
     let interval: any;
-    const checkStatus = async () => {
-      if (currentUser && storeSettings?.connectivity.whatsappPhone) {
-        const status = await whatsappService.getInstanceStatus(storeSettings.connectivity.whatsappPhone);
+    const instanceName = storeSettings?.connectivity.whatsappPhone;
+
+    const checkGlobalUpdates = async () => {
+      if (!currentUser || !instanceName) return;
+
+      try {
+        // 1. Atualiza Status de Conexão
+        const status = await getInstanceStatus(instanceName);
         setGlobalWhatsappStatus(status);
+
+        // 2. Se conectado, busca chats para ver mensagens não lidas
+        if (status === 'Conectado') {
+            const chats = await getChats(instanceName);
+            
+            for (const chat of chats) {
+                const jid = chat.remoteJid;
+                const lastMsg = chat.ultimaMensagem || '';
+                const unread = chat.unreadCount || 0;
+                
+                // Só notifica se tiver mensagens não lidas E o texto for diferente do último processado
+                if (unread > 0 && lastMsg && lastProcessedMessagesRef.current[jid] !== lastMsg) {
+                    
+                    // Se o usuário já estiver no chat com essa pessoa aberta, não mostramos o toast redundante
+                    const isChatSelected = currentPageRef.current === Page.Chat && pendingChat?.jid === jid;
+
+                    if (!isChatSelected) {
+                        const name = chat.contactName !== 'Desconhecido' ? chat.contactName : jid.split('@')[0];
+                        
+                        showToast(
+                            `Nova mensagem de ${name}: ${lastMsg.substring(0, 40)}${lastMsg.length > 40 ? '...' : ''}`,
+                            'chat',
+                            () => {
+                                setPendingChat({ jid, message: '' });
+                                setCurrentPage(Page.Chat);
+                            }
+                        );
+                    }
+                    
+                    // Marca como processada
+                    lastProcessedMessagesRef.current[jid] = lastMsg;
+                } else if (unread === 0) {
+                    // Limpa cache se as mensagens foram lidas
+                    lastProcessedMessagesRef.current[jid] = lastMsg;
+                }
+            }
+        }
+      } catch (e) {
+          console.error("Erro no monitoramento global do WhatsApp", e);
       }
     };
 
     if (currentUser && storeSettings) {
-      checkStatus();
-      interval = setInterval(checkStatus, 30000);
+      checkGlobalUpdates();
+      interval = setInterval(checkGlobalUpdates, 10000); // Polling a cada 10 segundos
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [currentUser, storeSettings?.connectivity.whatsappPhone]);
+  }, [currentUser, storeSettings, pendingChat, showToast]);
 
   const handleLoginSuccess = useCallback((user: User) => {
     setCurrentUser(user);
@@ -269,6 +324,8 @@ const App: React.FC = () => {
             onConsumeInitialData={() => setPendingChat(null)}
           />
         );
+      case Page.QuestionsAndAnswers:
+          return <QuestionsAndAnswers questions={questions} products={products} customers={customers} onUpdate={updateQuestion} onDelete={deleteQuestion} showToast={showToast} />;
       case Page.Products:
         return <Products 
             products={products} onAddProductClick={navigateToAddProduct} onEditProductClick={navigateToEditProduct} deleteProduct={deleteProduct}

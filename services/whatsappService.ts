@@ -72,20 +72,39 @@ export const getContactInfo = async (instanceName: string, jid: string): Promise
     }
 };
 
+// Auxiliar para limpar número mantendo IDs especiais como @lid
+const getTargetIdentifier = (jid: string) => {
+    if (jid.includes('@lid')) return jid;
+    return jid.split('@')[0].replace(/\D/g, '');
+};
+
 export const sendMessage = async (instanceName: string, number: string, message: string) => {
-    const cleanNumber = number.split('@')[0].replace(/\D/g, '');
+    const target = getTargetIdentifier(number);
     const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number: cleanNumber, message })
+        body: JSON.stringify({ number: target, message })
+    });
+    return response.json();
+};
+
+export const sendMedia = async (instanceName: string, number: string, base64: string, type: 'image' | 'video' | 'audio', caption?: string) => {
+    const target = getTargetIdentifier(number);
+    const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/send-media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            number: target, 
+            media: base64,
+            type,
+            caption
+        })
     });
     return response.json();
 };
 
 export const getMessagesForChat = async (instanceName: string, chatId: string): Promise<any[]> => {
     try {
-        // Rota solicitada: /api/instances/:name/messages/:uid
-        // Nota: O JID (uid) é passado diretamente como parte do path
         const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances/${instanceName}/messages/${chatId}`);
         const data = await response.json();
         

@@ -7,7 +7,7 @@ import CatalogModal from '../components/CatalogModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import ImportProductModal from '../components/ImportProductModal';
 import { PencilIcon, TrashIcon, ProductIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChatIcon, CheckCircleIcon } from '../components/icons/Icons';
-import * as whatsappService from '../services/whatsappService';
+import { getCatalog } from '../services/whatsappService';
 
 type CatalogItem = { id: string; name: string };
 
@@ -131,7 +131,7 @@ const Products: React.FC<ProductsProps> = (props) => {
     if (whatsappStatus !== 'Conectado' || !whatsappPhone) return;
     setIsFetchingCatalog(true);
     try {
-        const results = await whatsappService.getCatalog(whatsappPhone);
+        const results = await getCatalog(whatsappPhone);
         setWhatsappCatalog(results);
     } catch (e) {
         props.showToast("Erro ao carregar catálogo do WhatsApp.", "error");

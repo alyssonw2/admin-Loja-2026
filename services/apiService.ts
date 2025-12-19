@@ -50,6 +50,18 @@ const REQUIRED_TABLES: TableSchema[] = [
     { tableName: `${TABLE_PREFIX}cfg_shippings`, fields: { "config": "json", "store_id": "string|required" } },
     { tableName: `${TABLE_PREFIX}cfg_ai`, fields: { "config": "json", "store_id": "string|required" } },
     {
+        tableName: `${TABLE_PREFIX}questions_and_answers`,
+        fields: {
+            "product_id": "string",
+            "customer_id": "string",
+            "question_text": "string",
+            "question_date_integer": "number",
+            "answer_text": "string",
+            "questionType": "boolean",
+            "store_id": "string|required"
+        }
+    },
+    {
         tableName: `${TABLE_PREFIX}products`,
         fields: {
             "name": "string",

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Product, Order, Customer, Category, Brand, Model, Material, StoreSettings, Banner, Coupon, AnalyticsData, Metric, AnalyticsChartDataPoint, Review, Color, Toast, ChannelDistributionChartDataPoint, Cart } from '../types';
+import type { Product, Order, Customer, Category, Brand, Model, Material, StoreSettings, Banner, Coupon, AnalyticsData, Metric, AnalyticsChartDataPoint, Review, Color, Toast, ChannelDistributionChartDataPoint, Cart, QuestionAndAnswer } from '../types';
 import { OrderStatus, AnalyticsPeriod, OrderOrigin } from '../types';
 import { db } from '../services/apiService';
 
@@ -57,6 +57,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
   const [carts, setCarts] = useState<Cart[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [questions, setQuestions] = useState<QuestionAndAnswer[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -82,6 +83,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
         fetchedCarts,
         fetchedCoupons,
         fetchedReviews,
+        fetchedQuestions,
         fetchedBanners,
         fetchedSettings
       ] = await Promise.all([
@@ -96,6 +98,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
         db.getAll<Cart>('carts'),
         db.getAll<Coupon>('coupons'),
         db.getAll<Review>('reviews'),
+        db.getAll<QuestionAndAnswer>('questions_and_answers'),
         db.getAll<Banner>('banners'),
         db.getSettings()
       ]);
@@ -111,6 +114,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
       setCarts(fetchedCarts);
       setCoupons(fetchedCoupons);
       setReviews(fetchedReviews);
+      setQuestions(fetchedQuestions);
 
       // Merge fetched settings with default structure to ensure all fields exist
       const settings = fetchedSettings ? { ...DEFAULT_SETTINGS, ...fetchedSettings } : DEFAULT_SETTINGS;
@@ -299,6 +303,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
       if (storeSettings) setStoreSettings({ ...storeSettings, banners });
   };
   const reloadReviews = async () => setReviews(await db.getAll('reviews'));
+  const reloadQuestions = async () => setQuestions(await db.getAll('questions_and_answers'));
   const reloadCustomers = async () => setCustomers(await db.getAll('customers'));
   const reloadCarts = async () => setCarts(await db.getAll('carts'));
 
@@ -463,6 +468,24 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
       }
   };
 
+  // Questions and Answers
+  const questionCrud = {
+      update: async (item: QuestionAndAnswer) => {
+          try {
+            await db.update('questions_and_answers', item.id, item);
+            showToast('Pergunta respondida', 'success');
+            reloadQuestions();
+          } catch(e) { showToast('Erro ao responder', 'error'); }
+      },
+      delete: async (id: string) => {
+          try {
+            await db.delete('questions_and_answers', id);
+            showToast('Pergunta removida', 'success');
+            reloadQuestions();
+          } catch(e) { showToast('Erro ao excluir', 'error'); }
+      }
+  };
+
   // Settings & Banners
   const updateStoreSettings = async (newSettings: StoreSettings) => {
       try {
@@ -510,6 +533,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
     orders, updateOrder: orderCrud.update,
     customers, addCustomer: customerCrud.add, // Added addCustomer
     carts, // Exposed carts state
+    questions, updateQuestion: questionCrud.update, deleteQuestion: questionCrud.delete, // Questions
     kpi,
     categories, addCategory: categoryCrud.add, updateCategory: categoryCrud.update, deleteCategory: categoryCrud.delete,
     brands, addBrand: brandCrud.add, updateBrand: brandCrud.update, deleteBrand: brandCrud.delete,

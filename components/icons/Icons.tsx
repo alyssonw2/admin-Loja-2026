@@ -16,6 +16,19 @@ export const ChatIcon = ({ className = 'w-6 h-6' }: IconProps) => (
   </svg>
 );
 
+export const MicrophoneIcon = ({ className = 'w-6 h-6' }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 10v1a7 7 0 01-14 0v-1m7 10v-4m-4 4h8" />
+  </svg>
+);
+
+export const StopIcon = ({ className = 'w-6 h-6' }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <rect x="6" y="6" width="12" height="12" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export const ProductIcon = ({ className = 'w-6 h-6' }: IconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -184,7 +197,7 @@ export const ChevronLeftIcon = ({ className = 'w-5 h-5' }: IconProps) => (
 
 export const CalendarIcon = ({ className = 'w-5 h-5' }: IconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 004.5 21h15a2.25 2.25 0 002.25-2.25m-18 0h18" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 004.5 21h15a2.25 2.25 0 002.25-2.25m-18 0h18" />
   </svg>
 );
 

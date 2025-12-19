@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ArrowRightIcon, StorefrontIcon } from '../components/icons/Icons';
-import * as apiService from '../services/apiService';
+import { loginPanelUser } from '../services/apiService';
 import type { Toast, User } from '../types';
 
 interface LoginProps {
@@ -24,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
     setError('');
     
     try {
-      const panelUser = await apiService.loginPanelUser(email, password, rememberMe);
+      const panelUser = await loginPanelUser(email, password, rememberMe);
       showToast(`Bem-vindo, ${panelUser.name}!`, 'success');
       onLoginSuccess(panelUser);
     } catch (err: any) {

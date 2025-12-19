@@ -1,5 +1,4 @@
 
-
 import React, { useEffect } from 'react';
 import type { Toast } from '../types';
 import { CheckCircleIcon, InformationCircleIcon, ChatIcon } from './icons/Icons';
@@ -33,20 +32,32 @@ const ToastComponent: React.FC<ToastProps> = ({ toast, removeToast }) => {
     }
   };
 
+  const handleToastClick = () => {
+      if (toast.onClick) {
+          toast.onClick();
+          removeToast(toast.id);
+      }
+  };
+
   return (
     <div
-      className="w-80 max-w-full bg-gray-700 shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden animate-fade-in-right"
+      onClick={handleToastClick}
+      className={`w-80 max-w-full bg-gray-700 shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden animate-fade-in-right ${toast.onClick ? 'cursor-pointer hover:bg-gray-600 transition-colors' : ''}`}
     >
       <div className="p-4">
         <div className="flex items-start">
           <div className="flex-shrink-0">{getIcon()}</div>
           <div className="ml-3 w-0 flex-1 pt-0.5">
             <p className="text-sm font-medium text-white">{toast.message}</p>
+            {toast.onClick && <p className="text-[10px] text-primary-light font-bold mt-1 uppercase">Clique para abrir</p>}
           </div>
           <div className="ml-4 flex-shrink-0 flex">
             <button
-              onClick={() => removeToast(toast.id)}
-              className="bg-gray-700 rounded-md inline-flex text-gray-400 hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={(e) => {
+                  e.stopPropagation();
+                  removeToast(toast.id);
+              }}
+              className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-200 focus:outline-none"
             >
               <span className="sr-only">Close</span>
               <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

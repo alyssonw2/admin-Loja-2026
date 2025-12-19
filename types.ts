@@ -6,6 +6,7 @@ export enum Page {
   Login = 'Login',
   Dashboard = 'Dashboard',
   Chat = 'Chat',
+  QuestionsAndAnswers = 'Mensagens / FAQ',
   Products = 'Produtos',
   AddEditProduct = 'Adicionar/Editar Produto',
   Orders = 'Pedidos',
@@ -196,6 +197,7 @@ export interface ChatConversation {
   timestamp: string;
   unreadCount: number;
   avatarUrl: string;
+  rawTimestamp?: number;
 }
 
 export interface ChatMessage {
@@ -204,7 +206,18 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   mediaUrl?: string;
-  mediaType?: 'image' | 'video';
+  mediaType?: 'image' | 'video' | 'audio' | 'sticker' | 'document';
+}
+
+export interface QuestionAndAnswer {
+  id: string;
+  product_id: string;
+  customer_id: string;
+  question_text: string;
+  question_date_integer: number;
+  store_id: string;
+  questionType: boolean;
+  answer_text?: string;
 }
 
 export interface Banner {
@@ -328,6 +341,7 @@ export interface Toast {
   id: number;
   message: string;
   type: 'success' | 'info' | 'chat' | 'error';
+  onClick?: () => void;
 }
 
 export interface WhatsAppProduct {

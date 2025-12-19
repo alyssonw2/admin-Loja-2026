@@ -12,7 +12,14 @@ interface SidebarProps {
 
 const navItems = [
   { page: Page.Dashboard, icon: DashboardIcon, title: 'Dashboard' },
-  { page: Page.Chat, icon: ChatIcon, title: 'Chat' },
+  {
+    title: 'Atendimento',
+    icon: ChatIcon,
+    subItems: [
+      { page: Page.Chat, title: 'WhatsApp' },
+      { page: Page.QuestionsAndAnswers, title: 'Mensagens / FAQ' },
+    ]
+  },
   { page: Page.Products, icon: ProductIcon, title: 'Produtos' },
   { page: Page.Orders, icon: OrderIcon, title: 'Pedidos' },
   { page: Page.AbandonedCarts, icon: ShoppingCartIcon, title: 'Carrinhos' },
@@ -47,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">E-connect</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">Admin Panel</p>
       </div>
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul>
           {navItems.map((item) => {
             const isSubmenuOpen = item.title && openMenus.includes(item.title);
@@ -60,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
                   <button
                     onClick={() => toggleMenu(item.title!)}
                     className={`flex items-center justify-between w-full px-4 py-3 my-1 rounded-lg transition-colors duration-200 ${
-                      isSubmenuActive ? 'text-gray-900 dark:text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                      isSubmenuActive ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700/50' : 'hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     <div className="flex items-center">

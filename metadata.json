@@ -1,5 +1,7 @@
 {
   "name": "Painel de E-commerce de Roupas",
   "description": "Um painel administrativo completo para gerenciar um e-commerce de roupas, incluindo gestão de produtos, pedidos, clientes e análises de vendas.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { StoreSettings, Banner, Toast, WhatsAppProduct, Category, Brand, Model, Material, Color, Product } from '../types';
 import { StorefrontIcon, PaletteIcon, InfoIcon, LinkIcon, ShareIcon, CreditCardIcon, TruckIcon, PhotographIcon, PencilIcon, TrashIcon, MailIcon, GlobeAltIcon, CodeBracketIcon, ChatIcon, CheckCircleIcon, ArrowRightIcon, CpuChipIcon } from '../components/icons/Icons';
-import * as whatsappService from '../services/whatsappService';
+import { createInstance, getInstanceStatus, connectInstance, getQrCode, disconnectInstance, getCatalog } from '../services/whatsappService';
 import ImportProductModal from '../components/ImportProductModal';
 import BannerModal from '../components/BannerModal';
 import { db } from '../services/apiService';
@@ -105,7 +105,7 @@ const Settings: React.FC<SettingsProps> = ({
     const checkStatus = async () => {
         if (activeTab === 'conectividade' && formData.connectivity.whatsappPhone) {
             try {
-                const status = await whatsappService.getInstanceStatus(formData.connectivity.whatsappPhone);
+                const status = await getInstanceStatus(formData.connectivity.whatsappPhone);
                 setConnectionStatus(status);
                 // Se detectar que conectou, para qualquer polling de QR pendente
                 if (status === 'Conectado' && pollingRef.current) {
@@ -124,7 +124,7 @@ const Settings: React.FC<SettingsProps> = ({
     if (connectionStatus !== 'Conectado' || !formData.connectivity.whatsappPhone) return;
     setIsFetchingCatalog(true);
     try {
-        const products = await whatsappService.getCatalog(instanceName);
+        const products = await getCatalog(instanceName);
         setWhatsappCatalog(products);
     } catch (e) {
         showToast("Erro ao carregar catálogo do WhatsApp.", "error");
@@ -181,7 +181,7 @@ const Settings: React.FC<SettingsProps> = ({
       
       pollingRef.current = setInterval(async () => {
           try {
-              const data = await whatsappService.getQrCode(instanceName);
+              const data = await getQrCode(instanceName);
               if (data.qrCode) {
                   setQrCode(data.qrCode);
                   setConnectionStatus('Conectando');
@@ -208,7 +208,7 @@ const Settings: React.FC<SettingsProps> = ({
     setQrCode(null);
     
     try {
-        await whatsappService.connectInstance(instanceName);
+        await connectInstance(instanceName);
         startQrPolling();
         showToast("Iniciando conexão. Aguarde o QR Code...", "info");
     } catch (e) {
@@ -223,7 +223,7 @@ const Settings: React.FC<SettingsProps> = ({
   const handleDisconnectWhatsApp = async () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     try {
-        await whatsappService.disconnectInstance(instanceName);
+        await disconnectInstance(instanceName);
         setConnectionStatus('Desconectado');
         setQrCode(null);
         showToast("WhatsApp desconectado.", "info");
@@ -237,7 +237,7 @@ const Settings: React.FC<SettingsProps> = ({
     setConnectionStatus('Conectando');
     if (pollingRef.current) clearInterval(pollingRef.current);
     try {
-        await whatsappService.disconnectInstance(instanceName);
+        await disconnectInstance(instanceName);
         setTimeout(handleConnectWhatsApp, 1500);
     } catch (e) {
         handleConnectWhatsApp();
@@ -344,7 +344,7 @@ const Settings: React.FC<SettingsProps> = ({
     try {
         // Se o telefone estiver presente, garante que a instância foi criada
         if (formData.connectivity.whatsappPhone) {
-            await whatsappService.createInstance(formData.connectivity.whatsappPhone);
+            await createInstance(formData.connectivity.whatsappPhone);
         }
         
         updateSettings({ 
@@ -703,7 +703,7 @@ const Settings: React.FC<SettingsProps> = ({
                                     <div className="space-y-2 text-center">
                                       <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Como conectar?</p>
                                       <p className="text-xs text-gray-600 leading-relaxed">
-                                        1. Abra o WhatsApp no seu celular<br/>
+                                        1. Abrir o WhatsApp no seu celular<br/>
                                         2. Toque em <b>Menu</b> ou <b>Configurações</b><br/>
                                         3. Selecione <b>Aparelhos Conectados</b><br/>
                                         4. Aponte a câmera para esta tela
