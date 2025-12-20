@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Order, Review, OrderEvent, Toast } from '../types';
 import { OrderStatus, OrderOrigin } from '../types';
-import { ChevronLeftIcon, CheckCircleIcon, StarIcon, DocumentArrowUpIcon } from '../components/icons/Icons';
+import { ChevronLeftIcon, CheckCircleIcon, StarIcon, DocumentArrowUpIcon, InformationCircleIcon } from '../components/icons/Icons';
 import { getStatusColorClass, getOriginIcon } from '../utils/helpers';
 
 interface OrderDetailProps {
@@ -29,26 +29,43 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
     return reviews.find(r => r.orderId === order.id);
   }, [order, reviews]);
 
+  // Normalização de itens para suportar camelCase (frontend) e snake_case (banco de dados)
   const items = useMemo(() => {
     if (!order?.items) return [];
-    if (Array.isArray(order.items)) return order.items;
-    try {
-      if (typeof order.items === 'string') return JSON.parse(order.items);
-    } catch (e) {
-      console.error("Failed to parse order items", e);
+    let rawItems = [];
+    if (Array.isArray(order.items)) {
+      rawItems = order.items;
+    } else {
+      try {
+        if (typeof order.items === 'string') rawItems = JSON.parse(order.items);
+      } catch (e) {
+        console.error("Failed to parse order items", e);
+      }
     }
-    return [];
+
+    return rawItems.map((item: any) => ({
+      productId: item.productId || item.product_id,
+      productName: item.productName || item.product_name || 'Produto sem nome',
+      quantity: item.quantity || 0,
+      price: item.price || 0,
+      imageUrl: item.imageUrl || item.image_url || ''
+    }));
   }, [order?.items]);
 
+  // Normalização de eventos da linha do tempo
   const events = useMemo(() => {
     if (!order?.events) return [];
-    if (Array.isArray(order.events)) return order.events;
-    try {
-      if (typeof order.events === 'string') return JSON.parse(order.events);
-    } catch (e) {
-      console.error("Failed to parse order events", e);
+    let rawEvents = [];
+    if (Array.isArray(order.events)) {
+      rawEvents = order.events;
+    } else {
+      try {
+        if (typeof order.events === 'string') rawEvents = JSON.parse(order.events);
+      } catch (e) {
+        console.error("Failed to parse order events", e);
+      }
     }
-    return [];
+    return rawEvents;
   }, [order?.events]);
 
   if (!order) {
@@ -117,7 +134,12 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
                   <p className="font-semibold text-gray-900 dark:text-indigo-50">R$ {(Number(item.price || 0) * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
-              {items.length === 0 && <p className="text-gray-500 text-center py-4">Nenhum item encontrado para este pedido.</p>}
+              {items.length === 0 && (
+                <div className="text-center py-8">
+                  <InformationCircleIcon className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                  <p className="text-gray-500">Nenhum item encontrado para este pedido.</p>
+                </div>
+              )}
             </div>
             <div className="border-t border-gray-100 dark:border-gray-700 mt-4 pt-4 flex justify-end">
                 <div className="text-lg">
@@ -131,7 +153,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-indigo-50 mb-4">Avaliação do Cliente</h3>
                 <div className="flex items-start gap-4">
-                    <img src={customerReview.customerPhotoUrl} alt={customerReview.customerName} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 object-cover" />
+                    <img src={customerReview.customerPhotoUrl} alt={customerReview.customerName} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-border-600 object-cover" />
                     <div>
                         <StarRating rating={customerReview.rating} />
                         <p className="text-gray-600 dark:text-gray-300 mt-2 italic">"{customerReview.comment}"</p>
@@ -169,10 +191,26 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
                             Marcar como Entregue
                         </button>
                     )}
+                    
+                    {/* Fallback para estados onde não há ação imediata, garantindo que não fique em branco */}
                     {(order.status === OrderStatus.Delivered || order.status === OrderStatus.Canceled) && (
-                        <div className={`p-4 rounded-lg text-center font-semibold ${getStatusColorClass(order.status)}`}>
-                            {order.status === OrderStatus.Delivered ? 'Pedido Finalizado' : 'Pedido Cancelado'}
+                        <div className={`p-4 rounded-lg text-center font-bold ${getStatusColorClass(order.status)}`}>
+                            {order.status === OrderStatus.Delivered ? 'PEDIDO FINALIZADO' : 'PEDIDO CANCELADO'}
                         </div>
+                    )}
+                    
+                    {/* Botão de cancelamento visível para estados iniciais */}
+                    {(order.status === OrderStatus.Pending || order.status === OrderStatus.Processing) && (
+                      <button 
+                        onClick={() => {
+                          if(window.confirm("Deseja realmente cancelar este pedido?")) {
+                            handleUpdateStatus(OrderStatus.Canceled, "Pedido cancelado pelo administrador.");
+                          }
+                        }} 
+                        className="w-full border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 font-bold py-2 px-4 rounded-lg transition-all"
+                      >
+                        Cancelar Pedido
+                      </button>
                     )}
                  </div>
             </div>
@@ -180,7 +218,8 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-indigo-50 mb-4">Linha do Tempo</h3>
                 <ul className="space-y-4">
-                    {events.map((event: any, index: number) => (
+                    {events.length > 0 ? (
+                      events.map((event: any, index: number) => (
                         <li key={index} className="flex gap-4">
                             <div className="flex flex-col items-center">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${getStatusColorClass(event.status)} bg-white dark:bg-gray-800`}>
@@ -188,14 +227,24 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
                                 </div>
                                 {index < events.length - 1 && <div className="w-0.5 flex-1 bg-gray-100 dark:bg-gray-700 my-1"></div>}
                             </div>
-                            <div>
+                            <div className="flex-1">
                                 <p className={`font-bold text-sm text-gray-900 dark:text-indigo-50`}>{event.status}</p>
                                 <p className="text-xs text-gray-600 dark:text-gray-300">{event.description}</p>
                                 <p className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(event.timestamp).toLocaleString('pt-BR')}</p>
                             </div>
                         </li>
-                    ))}
-                    {events.length === 0 && <p className="text-sm text-gray-500 italic">Nenhum evento registrado.</p>}
+                      ))
+                    ) : (
+                      <li className="text-center py-4">
+                        <p className="text-sm text-gray-500 italic">Nenhum evento registrado.</p>
+                        <button 
+                          onClick={() => handleUpdateStatus(order.status, "Início do rastreamento do pedido.")}
+                          className="mt-2 text-xs text-primary font-bold hover:underline"
+                        >
+                          Iniciar Linha do Tempo
+                        </button>
+                      </li>
+                    )}
                 </ul>
              </div>
         </div>
