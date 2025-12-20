@@ -67,7 +67,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
             ...initialState,
             ...product, 
             sizes: Array.isArray(productSizes) ? productSizes : [], 
-            promotionalPrice: product.promotionalPrice || '',
+            promotionalPrice: product.promotionalPrice || '0',
             width: product.width || '',
             height: product.height || '',
             depth: product.depth || '',
@@ -246,7 +246,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">Promo (R$)</label>
-                        <input type="number" name="promotionalPrice" value={formData.promotionalPrice} onChange={handleChange} step="0.01" className="bg-gray-900 p-3 rounded-xl w-full border border-gray-700" />
+                        <input type="number" min="0" name="promotionalPrice" value={formData.promotionalPrice || 0} onChange={handleChange} step="0.01" className="bg-gray-900 p-3 rounded-xl w-full border border-gray-700" />
                     </div>
                 </div>
 

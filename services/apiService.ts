@@ -68,7 +68,7 @@ const REQUIRED_TABLES: TableSchema[] = [
             "sku": "string",
             "price": "string",
             "promotional_price": "string",
-            "stock": "string",
+            "stock": "any",
             "sizes": "any",
             "category_id": "string",
             "brand_id": "string",
