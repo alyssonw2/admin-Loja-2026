@@ -276,13 +276,13 @@ const Chat: React.FC<ChatProps> = ({
     }, [conversations, selectedConversationId]);
 
     return (
-        <div className="flex h-full">
+        <div className="flex h-full  max-h-screen border-t border-gray-200 dark:border-gray-700">
             <aside className="w-1/3 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col min-w-[320px]">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-indigo-50">Contatos</h2>
                     <button onClick={fetchChats} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5m11 11v-5h-5m-1 1l-15-15"/></svg></button>
                 </div>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto ">
                     {conversations.map(convo => (
                         <button key={convo.id} onClick={() => setSelectedConversationId(convo.id)} className={`w-full text-left p-4 flex items-center space-x-4 border-b dark:border-gray-700/50 ${selectedConversationId === convo.id ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`}>
                             <img src={convo.avatarUrl} className="w-12 h-12 rounded-full object-cover bg-gray-200" alt={convo.contactName} />
@@ -298,7 +298,8 @@ const Chat: React.FC<ChatProps> = ({
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col bg-[#e5ddd5] dark:bg-gray-900">
+            
+            <main className="flex-1 flex flex-col bg-[#e5ddd5] dark:bg-gray-900 max-h-screen" >
                 {selectedConversation ? (
                     <>
                         <header className="bg-white dark:bg-gray-800 p-4 flex items-center space-x-4 border-b dark:border-gray-700 shadow-sm z-10">
