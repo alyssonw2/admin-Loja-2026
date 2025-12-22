@@ -47,7 +47,7 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, onSave, coup
 
         // Logic for Free Shipping
         if (name === 'type' && value === CouponType.FreeShipping) {
-            newState.discountType = null;
+            newState.discountType = 'Frete Grátis';
             newState.discountValue = '0';
         } else if (name === 'type' && value !== CouponType.FreeShipping && prev.type === CouponType.FreeShipping) {
             // Revert to a default discount type if changing from Free Shipping
@@ -84,7 +84,7 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, onSave, coup
             </div>
             <div>
                 <label htmlFor="type" className="block text-sm font-medium text-gray-300 mb-2">Tipo de Cupom</label>
-                <select id="type" name="type" value={formData.type as string} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary">
+                <select id="type" name="type" value={formData.type as string || 'fixed'} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary">
                     {/* FIX: Explicitly cast enum values to fix Type 'unknown' errors. */}
                     {(Object.values(CouponType) as string[]).map(type => <option key={type} value={type}>{type}</option>)}
                 </select>
@@ -94,7 +94,7 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, onSave, coup
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="discountType" className="block text-sm font-medium text-gray-300 mb-2">Tipo de Desconto</label>
-                <select id="discountType" name="discountType" value={(formData.discountType as string) || ''} onChange={handleChange} disabled={isFreeShipping} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-600 disabled:cursor-not-allowed">
+                <select id="discountType" name="discountType" value={(formData.discountType as string) || 'Valor Fixo'} onChange={handleChange} disabled={isFreeShipping} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-600 disabled:cursor-not-allowed">
                     <option value={DiscountType.Percentage}>Porcentagem (%)</option>
                     <option value={DiscountType.FixedAmount}>Valor Fixo (R$)</option>
                 </select>
