@@ -305,6 +305,7 @@ export interface Coupon {
     discountType: string | DiscountType | null; 
     discountValue: string;
     minPurchaseValue: string;
+    expiryDate?: string;
     isActive: boolean;
 }
 

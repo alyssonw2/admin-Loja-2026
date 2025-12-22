@@ -18,6 +18,7 @@ const initialState: Omit<Coupon, 'id'> = {
   discountType: DiscountType.Percentage,
   discountValue: '',
   minPurchaseValue: '',
+  expiryDate: '',
   isActive: true,
 };
 
@@ -110,6 +111,13 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, onSave, coup
               <label htmlFor="minPurchaseValue" className="block text-sm font-medium text-gray-300 mb-2">Valor Mínimo da Compra (R$)</label>
               <input id="minPurchaseValue" type="number" name="minPurchaseValue" value={formData.minPurchaseValue} onChange={handleChange} step="0.01" placeholder="0.00" className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
+            <div>
+              <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-300 mb-2">Data de Validade</label>
+              <input id="expiryDate" type="date" name="expiryDate" value={formData.expiryDate} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div>
               <label htmlFor="isActive" className="block text-sm font-medium text-gray-300 mb-2">Status</label>
               <select id="isActive" name="isActive" value={formData.isActive.toString()} onChange={handleChange} className="bg-gray-700 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary">
