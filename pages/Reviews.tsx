@@ -50,30 +50,30 @@ const Reviews: React.FC<ReviewsProps> = ({ reviews, addReview, updateReview, del
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">Gerenciar Avaliações</h2>
-        <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-indigo-50">Gerenciar Avaliações</h2>
+        <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-2 px-4 rounded-lg">
           Adicionar Avaliação
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {reviews.map((review) => (
-          <div key={review.id} className="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col">
+          <div key={review.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col border border-gray-200 dark:border-gray-700">
             <div className="flex-1">
               <div className="flex items-center mb-4">
-                <img src={review.customerPhotoUrl} alt={review.customerName} className="w-12 h-12 rounded-full mr-4 bg-gray-700" />
+                <img src={review.customerPhotoUrl} alt={review.customerName} className="w-12 h-12 rounded-full mr-4 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 object-cover" />
                 <div>
-                  <h3 className="font-bold text-white">{review.customerName}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-indigo-50">{review.customerName}</h3>
                   <StarRating rating={review.rating} />
                 </div>
               </div>
-              <p className="text-gray-300 italic">"{review.comment}"</p>
+              <p className="text-gray-700 dark:text-gray-300 italic">"{review.comment}"</p>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
-              <span className="text-sm text-gray-500">{new Date(review.date).toLocaleDateString('pt-BR')}</span>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400">{new Date(review.date).toLocaleDateString('pt-BR')}</span>
               <div className="space-x-2">
-                <button onClick={() => handleOpenModal(review)} className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-gray-700"><PencilIcon className="w-5 h-5"/></button>
-                <button onClick={() => handleDeleteReview(review)} className="text-red-400 hover:text-red-300 p-2 rounded-full hover:bg-gray-700"><TrashIcon className="w-5 h-5"/></button>
+                <button onClick={() => handleOpenModal(review)} className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><PencilIcon className="w-5 h-5"/></button>
+                <button onClick={() => handleDeleteReview(review)} className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><TrashIcon className="w-5 h-5"/></button>
               </div>
             </div>
           </div>

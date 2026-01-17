@@ -52,41 +52,41 @@ const Coupons: React.FC<CouponsProps> = ({ coupons, addCoupon, updateCoupon, del
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">Gerenciar Cupons de Desconto</h2>
-        <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-indigo-50">Gerenciar Cupons de Desconto</h2>
+        <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-indigo-50 font-bold py-2 px-4 rounded-lg">
           Adicionar Cupom
         </button>
       </div>
 
-      <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-gray-700">
+          <thead className="bg-gray-100 dark:bg-gray-700">
             <tr>
-              <th className="p-4 text-gray-300">Código</th>
-              <th className="p-4 text-gray-300">Tipo</th>
-              <th className="p-4 text-gray-300">Desconto</th>
-              <th className="p-4 text-gray-300">Compra Mínima</th>
-              <th className="p-4 text-gray-300">Status</th>
-              <th className="p-4 text-gray-300 text-right">Ações</th>
+              <th className="p-4 text-gray-700 dark:text-gray-300">Código</th>
+              <th className="p-4 text-gray-700 dark:text-gray-300">Tipo</th>
+              <th className="p-4 text-gray-700 dark:text-gray-300">Desconto</th>
+              <th className="p-4 text-gray-700 dark:text-gray-300">Compra Mínima</th>
+              <th className="p-4 text-gray-700 dark:text-gray-300">Status</th>
+              <th className="p-4 text-gray-700 dark:text-gray-300 text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
             {coupons.map((coupon) => {
                 const minVal = parseFloat(coupon.minPurchaseValue || '0');
                 return (
-                  <tr key={coupon.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                  <tr key={coupon.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="p-4 font-medium text-primary">{coupon.code}</td>
-                    <td className="p-4 text-white">{coupon.type}</td>
-                    <td className="p-4 text-white">{getDiscountDisplay(coupon)}</td>
-                    <td className="p-4 text-white">{minVal > 0 ? `R$ ${minVal.toFixed(2)}` : '-'}</td>
+                    <td className="p-4 text-gray-900 dark:text-indigo-50">{coupon.type}</td>
+                    <td className="p-4 text-gray-900 dark:text-indigo-50">{getDiscountDisplay(coupon)}</td>
+                    <td className="p-4 text-gray-900 dark:text-indigo-50">{minVal > 0 ? `R$ ${minVal.toFixed(2)}` : '-'}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${coupon.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${coupon.isActive ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
                         {coupon.isActive ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
                     <td className="p-4 space-x-4 text-right">
-                      <button onClick={() => handleOpenModal(coupon)} className="text-blue-400 hover:text-blue-300"><PencilIcon /></button>
-                      <button onClick={() => handleDeleteCoupon(coupon)} className="text-red-400 hover:text-red-300"><TrashIcon /></button>
+                      <button onClick={() => handleOpenModal(coupon)} className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"><PencilIcon /></button>
+                      <button onClick={() => handleDeleteCoupon(coupon)} className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"><TrashIcon /></button>
                     </td>
                   </tr>
                 );

@@ -31,14 +31,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ data, period, setPeriod, theme })
     return (
         <div className="p-8 space-y-8">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Análises de Desempenho</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-indigo-50">Análises de Desempenho</h2>
                 <div>
                     <label htmlFor="period-select" className="sr-only">Selecionar Período</label>
                     <select
                         id="period-select"
                         value={period}
                         onChange={(e) => setPeriod(e.target.value as AnalyticsPeriod)}
-                        className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md py-2 px-4 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="bg-white dark:bg-gray-700 text-gray-900 dark:text-indigo-50 rounded-md py-2 px-4 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                         {Object.values(AnalyticsPeriod).map(p => (
                             <option key={p} value={p}>{p}</option>

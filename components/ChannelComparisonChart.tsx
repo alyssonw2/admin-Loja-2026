@@ -16,13 +16,13 @@ const COLORS = {
 };
 
 const ChannelComparisonChart: React.FC<ChannelComparisonChartProps> = ({ data, title, theme }) => {
-  const textColor = theme === 'dark' ? '#9e9e9e' : '#6b7280';
-  const tooltipBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
-  const tooltipBorder = theme === 'dark' ? '#4d4d4d' : '#e5e7eb';
+  const textColor = theme === 'dark' ? '#9ca3af' : '#6b7280';
+  const tooltipBg = theme === 'dark' ? '#1f2937' : '#ffffff';
+  const tooltipBorder = theme === 'dark' ? '#374151' : '#e5e7eb';
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md h-96">
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 h-96">
+      <h3 className="text-xl font-bold text-gray-900 dark:text-indigo-50 mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie

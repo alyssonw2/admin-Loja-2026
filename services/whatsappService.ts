@@ -1,5 +1,5 @@
 
-const URL_BASE_WHATSAPP = "https://potential-different-gem-mystery.trycloudflare.com";
+const URL_BASE_WHATSAPP = 'http://localhost:3007';
 
 export const createInstance = async (name: string) => {
     const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances`, {
