@@ -2,7 +2,7 @@
 import type { User, StoreSettings } from "../types";
 import { mockData } from '../data/mockData';
 
-const API_URL = 'http://localhost:3008';
+const API_URL = "https://bancodadoslojadiogo.ajdev.com.br";//'http://localhost:3008';
 const ADMIN_EMAIL = "";
 const ADMIN_PASS = "";
 const TABLE_PREFIX = "loja_";

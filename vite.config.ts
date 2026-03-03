@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        allowedHosts: [
+          'lease-growing-hometown-mortality.trycloudflare.com'
+        ]
       },
       plugins: [react()],
       define: {
