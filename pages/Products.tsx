@@ -381,7 +381,7 @@ const Products: React.FC<ProductsProps> = (props) => {
 
   // Calculate total stock from sizes if available
   const getProductStock = (product: Product) => {
-      if (product.sizes && product.sizes.length > 0) {
+      if (Array.isArray(product.sizes) && product.sizes.length > 0) {
           return product.sizes.reduce((acc, curr) => acc + curr.quantity, 0);
       }
       return product.stock;

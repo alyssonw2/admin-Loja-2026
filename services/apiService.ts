@@ -294,6 +294,45 @@ const mapFromDb = (table: string, data: any): any => {
 const getToken = () => localStorage.getItem('auth_token');
 const setToken = (token: string) => localStorage.setItem('auth_token', token);
 
+// Funções para gerenciar sessão de usuário com expiração de 24h
+const REMEMBER_ME_DURATION = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
+
+const saveUserSession = (user: User) => {
+    const session = {
+        user,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('user_session', JSON.stringify(session));
+};
+
+const getSavedUserSession = (): User | null => {
+    try {
+        const sessionStr = localStorage.getItem('user_session');
+        if (!sessionStr) return null;
+        
+        const session = JSON.parse(sessionStr);
+        const now = Date.now();
+        
+        // Verifica se a sessão ainda é válida (menos de 24h)
+        if (now - session.timestamp > REMEMBER_ME_DURATION) {
+            clearUserSession();
+            return null;
+        }
+        
+        return session.user;
+    } catch (e) {
+        console.warn('Erro ao recuperar sessão do usuário:', e);
+        return null;
+    }
+};
+
+const clearUserSession = () => {
+    localStorage.removeItem('user_session');
+};
+
+// Exporta funções de gerenciamento de sessão
+export { getSavedUserSession, clearUserSession };
+
 const headers = (overrideToken?: string) => {
     const h: HeadersInit = { 'Content-Type': 'application/json' };
     const token = overrideToken || getToken();
@@ -433,27 +472,42 @@ export const loginPanelUser = async (email: string, password: string, rememberMe
         const sessionToken = btoa(JSON.stringify({ id: store.id, email: store.email, ts: Date.now() }));
         setToken(sessionToken); 
 
-        return {
+        const user: User = {
             id: store.id,
             username: store.name,
             name: store.name,
             email: store.email,
             avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(store.name)}&background=random`
         };
+        
+        // Salva sessão do usuário no localStorage se "lembrar-me" estiver ativo
+        if (rememberMe) {
+            saveUserSession(user);
+        }
+        
+        return user;
     } catch (error: any) {
         console.warn("Login via API failed, checking mock users.", error.message || error);
         await mockDelay();
-        const user = mockData.users.find(u => u.email === email && u.password === password);
-        if (user) {
-             const sessionToken = btoa(JSON.stringify({ id: user.id, email: user.email, ts: Date.now() }));
+        const mockUser = mockData.users.find(u => u.email === email && u.password === password);
+        if (mockUser) {
+             const sessionToken = btoa(JSON.stringify({ id: mockUser.id, email: mockUser.email, ts: Date.now() }));
              setToken(sessionToken);
-             return {
-                id: user.id,
-                username: user.username,
-                name: user.name,
-                email: user.email,
-                avatarUrl: user.avatarUrl
+             
+             const user: User = {
+                id: mockUser.id,
+                username: mockUser.username,
+                name: mockUser.name,
+                email: mockUser.email,
+                avatarUrl: mockUser.avatarUrl
              };
+             
+             // Salva sessão do usuário no localStorage se "lembrar-me" estiver ativo
+             if (rememberMe) {
+                 saveUserSession(user);
+             }
+             
+             return user;
         }
         throw error;
     }

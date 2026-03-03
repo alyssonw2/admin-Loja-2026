@@ -24,7 +24,7 @@ import CartDetail from './pages/CartDetail';
 import { Page, Order, Customer, Product, Toast, User, Cart, StoreSettings } from './types';
 import { useMockData } from './hooks/useMockData';
 import ToastContainer from './components/Toast';
-import { authenticateAndInitializeSystem } from './services/apiService';
+import { authenticateAndInitializeSystem, getSavedUserSession, clearUserSession } from './services/apiService';
 import { getInstanceStatus, getChats } from './services/whatsappService';
 import Login from './pages/Login';
 
@@ -33,7 +33,7 @@ const App: React.FC = () => {
   const [bootMessage, setBootMessage] = useState('Inicializando sistema...');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const [currentPage, setCurrentPage] = useState<Page>(Page.Landing); 
+  const [currentPage, setCurrentPage] = useState<Page>(Page.Login); 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedCart, setSelectedCart] = useState<Cart | null>(null);
@@ -79,6 +79,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        // Verifica se há uma sessão salva do usuário
+        const savedUser = getSavedUserSession();
+        if (savedUser) {
+          setCurrentUser(savedUser);
+          setCurrentPage(Page.Dashboard);
+        }
+        
         await authenticateAndInitializeSystem(setBootMessage);
         setBootStatus('ready');
       } catch (error) {
@@ -191,7 +198,8 @@ const App: React.FC = () => {
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
-    setCurrentPage(Page.Landing);
+    clearUserSession();
+    setCurrentPage(Page.Login);
   }, []);
 
   const handleUpdateUser = useCallback((updatedUser: User) => setCurrentUser(updatedUser), []);
@@ -271,8 +279,7 @@ const App: React.FC = () => {
 
   const handleNavigation = useCallback((page: Page) => {
     setCurrentPage(page);
-    refreshData(); 
-  }, [refreshData]);
+  }, []);
 
   // Função para iniciar recuperação de carrinho via chat interno
   const handleRecoverCart = useCallback((jid: string, message: string) => {
@@ -304,9 +311,11 @@ const App: React.FC = () => {
     );
   
   if (!currentUser) {
-      if (currentPage === Page.Login) return <Login onLoginSuccess={handleLoginSuccess} onNavigateToRegister={() => setCurrentPage(Page.Landing)} showToast={showToast} />;
-      if (currentPage === Page.CompleteSetup && pendingStoreId) return <CompleteSetup storeId={pendingStoreId} initialZipCode={pendingZipCode} onComplete={handleSetupComplete} showToast={showToast} />;
-      return <Landing onNavigateToLogin={() => setCurrentPage(Page.Login)} onRegisterSuccess={handleRegisterSuccess} showToast={showToast} />;
+      if (currentPage === Page.CompleteSetup && pendingStoreId) {
+        return <CompleteSetup storeId={pendingStoreId} initialZipCode={pendingZipCode} onComplete={handleSetupComplete} showToast={showToast} />;
+      }
+      // Sempre mostra o Login para usuários não autenticados
+      return <Login onLoginSuccess={handleLoginSuccess} onNavigateToRegister={() => setCurrentPage(Page.Landing)} showToast={showToast} />;
   }
 
   if (isDataLoading || !storeSettings) return <LoadingScreen message="Carregando dados da loja..." />
