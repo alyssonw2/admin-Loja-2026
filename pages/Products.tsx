@@ -487,7 +487,11 @@ const Products: React.FC<ProductsProps> = (props) => {
                   <tr key={product.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="p-4 flex items-center">
                       {product.media && product.media.length > 0 ? (
-                          <img src={product.media[0].url} alt={product.name} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-200 dark:bg-gray-700" />
+                          product.media[0].type === 'video' ? (
+                              <video src={product.media[0].url} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-200 dark:bg-gray-700" muted />
+                          ) : (
+                              <img src={product.media[0].url} alt={product.name} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-200 dark:bg-gray-700" />
+                          )
                       ) : (
                           <div className="w-12 h-12 rounded-md mr-4 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                               <ProductIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />

@@ -411,7 +411,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
                     {mediaFiles.map((media, index) => (
                         <div key={media.id} className="relative group bg-gray-900 rounded-2xl aspect-square overflow-hidden border border-gray-700 shadow-lg cursor-grab" draggable onDragStart={() => dragItem.current = index} onDragEnter={() => dragOverItem.current = index} onDragEnd={handleDragSort} onDragOver={(e) => e.preventDefault()}>
-                            <img src={media.url} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Preview" />
+                            {media.type === 'video' ? (
+                                <video src={media.url} className="w-full h-full object-cover" controls>
+                                    Seu navegador não suporta a tag de vídeo.
+                                </video>
+                            ) : (
+                                <img src={media.url} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Preview" />
+                            )}
                             
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20">
                                 {media.type === 'image' && (
@@ -425,6 +431,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                             </div>
                             
                             <div className="absolute bottom-2 left-2 bg-black/70 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white z-10">#{index + 1}</div>
+                            {media.type === 'video' && (
+                                <div className="absolute top-2 left-2 bg-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg z-10 flex items-center gap-1">
+                                    <VideoCameraIcon className="w-3 h-3"/>
+                                    VÍDEO
+                                </div>
+                            )}
                             {media.markers && media.markers.length > 0 && (
                                 <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg z-10 animate-pulse">
                                     {media.markers.length} MARCADORES

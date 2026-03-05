@@ -126,7 +126,11 @@ const QuestionsAndAnswers: React.FC<QuestionsAndAnswersProps> = ({ questions, pr
                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 lg:max-w-[300px]">
                           <div className="w-12 h-12 shrink-0">
                             {product.media?.[0] ? (
-                               <img src={product.media[0].url} className="w-full h-full rounded-lg object-cover border border-gray-200 dark:border-gray-600" alt={product.name} />
+                               product.media[0].type === 'video' ? (
+                                   <video src={product.media[0].url} className="w-full h-full rounded-lg object-cover border border-gray-200 dark:border-gray-600" muted />
+                               ) : (
+                                   <img src={product.media[0].url} className="w-full h-full rounded-lg object-cover border border-gray-200 dark:border-gray-600" alt={product.name} />
+                               )
                             ) : (
                                <div className="w-full h-full bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
                                  <ProductIcon className="w-6 h-6 text-gray-400" />

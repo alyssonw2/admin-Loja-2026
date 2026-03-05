@@ -162,7 +162,11 @@ const Marketplace: React.FC<MarketplaceProps> = ({ settings, updateSettings, pro
               {publishedProducts.map((product) => (
                 <tr key={product.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="p-4 flex items-center">
-                    <img src={product.media[0]?.url || ''} alt={product.name} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600" />
+                    {product.media[0]?.type === 'video' ? (
+                        <video src={product.media[0]?.url || ''} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600" muted />
+                    ) : (
+                        <img src={product.media[0]?.url || ''} alt={product.name} className="w-12 h-12 rounded-md mr-4 object-cover bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600" />
+                    )}
                     <span className="font-medium text-gray-900 dark:text-indigo-50">{product.name}</span>
                   </td>
                   <td className="p-4 text-gray-600 dark:text-gray-400">{product.sku}</td>
