@@ -117,7 +117,7 @@ const BannerModal: React.FC<BannerModalProps> = ({ isOpen, onClose, onSave, bann
                         <button 
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md text-sm font-medium"
+                            className="bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded-md text-sm font-medium"
                         >
                             Trocar
                         </button>

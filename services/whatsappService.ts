@@ -1,5 +1,5 @@
 
-const URL_BASE_WHATSAPP = "https://servicowhatsappdiogo.ajdev.com.br"; //'http://localhost:3007';
+const URL_BASE_WHATSAPP = "https://ws.grupod.com.br"; //'http://localhost:3007';
 
 export const createInstance = async (name: string) => {
     const response = await fetch(`${URL_BASE_WHATSAPP}/api/instances`, {

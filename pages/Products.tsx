@@ -6,7 +6,7 @@ import ColorModal from '../components/ColorModal';
 import CatalogModal from '../components/CatalogModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import ImportProductModal from '../components/ImportProductModal';
-import { PencilIcon, TrashIcon, ProductIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChatIcon, CheckCircleIcon } from '../components/icons/Icons';
+import { PencilIcon, TrashIcon, CopyIcon, ProductIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChatIcon, CheckCircleIcon } from '../components/icons/Icons';
 import { getCatalog } from '../services/whatsappService';
 
 type CatalogItem = { id: string; name: string };
@@ -43,7 +43,7 @@ const CatalogTable: React.FC<CatalogTableProps> = ({ title, items, onAddClick, o
                 <tr key={item.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="p-4 font-medium text-gray-900 dark:text-white">{item.name}</td>
                   <td className="p-4 space-x-4 text-right">
-                    <button onClick={() => onEditClick(item)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"><PencilIcon/></button>
+                    <button onClick={() => onEditClick(item)} className="text-primary hover:text-primary-dark dark:text-orange-400 dark:hover:text-orange-300 inline-flex items-center"><PencilIcon/></button>
                     <button onClick={() => onDeleteClick(item)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"><TrashIcon/></button>
                   </td>
                 </tr>
@@ -59,6 +59,7 @@ interface ProductsProps {
   products: Product[];
   onAddProductClick: () => void;
   onEditProductClick: (product: Product) => void;
+  onCloneProductClick: (product: Product) => void;
   deleteProduct: (productId: string) => void;
   
   categories: Category[];
@@ -520,8 +521,9 @@ const Products: React.FC<ProductsProps> = (props) => {
                         {product.createdAt ? new Date(product.createdAt).toLocaleDateString('pt-BR') : '-'}
                     </td>
                     <td className="p-4 space-x-4 text-right">
-                      <button onClick={() => props.onEditProductClick(product)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"><PencilIcon /></button>
-                      <button onClick={() => handleRequestDeleteProduct(product)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"><TrashIcon /></button>
+                      <button onClick={() => props.onEditProductClick(product)} className="text-primary hover:text-primary-dark dark:text-orange-400 dark:hover:text-orange-300 inline-flex items-center" title="Editar Produto"><PencilIcon /></button>
+                      <button onClick={() => props.onCloneProductClick(product)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center" title="Clonar Produto"><CopyIcon /></button>
+                      <button onClick={() => handleRequestDeleteProduct(product)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center" title="Excluir Produto"><TrashIcon /></button>
                     </td>
                   </tr>
                 )))}
@@ -612,7 +614,7 @@ const Products: React.FC<ProductsProps> = (props) => {
                     {cat.name}
                   </td>
                   <td className="p-4 space-x-4 text-right">
-                    <button onClick={() => handleOpenCategoryModal(cat)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"><PencilIcon /></button>
+                    <button onClick={() => handleOpenCategoryModal(cat)} className="text-primary hover:text-primary-dark dark:text-orange-400 dark:hover:text-orange-300"><PencilIcon /></button>
                     <button onClick={() => handleDeleteCategory(cat)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"><TrashIcon /></button>
                   </td>
                 </tr>

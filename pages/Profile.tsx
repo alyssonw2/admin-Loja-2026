@@ -46,6 +46,16 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, showToast }) => {
         // In this system, user data is stored in the 'stores' table
         await db.update('stores', user.id, payload);
 
+        // Sincroniza o nome da loja também nas configurações (aba "Loja" em Configurações)
+        try {
+            const currentSettings = await db.getSettings();
+            if (currentSettings && currentSettings.storeName !== formData.name) {
+                await db.saveSettings({ ...currentSettings, storeName: formData.name });
+            }
+        } catch (e) {
+            console.error("Erro ao sincronizar nome da loja nas configurações.", e);
+        }
+
         // Update local state
         const updatedUser: User = {
             ...user,

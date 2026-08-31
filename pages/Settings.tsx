@@ -721,7 +721,7 @@ const Settings: React.FC<SettingsProps> = ({
                                         <button 
                                             type="button" 
                                             onClick={handleReconnectWhatsApp} 
-                                            className="bg-blue-600 hover:bg-blue-700 text-indigo-50 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                            className="bg-primary hover:bg-primary-dark text-orange-50 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
                                         >
                                             <ArrowRightIcon className="w-5 h-5 rotate-180"/> Reconectar
                                         </button>

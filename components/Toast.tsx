@@ -22,9 +22,9 @@ const ToastComponent: React.FC<ToastProps> = ({ toast, removeToast }) => {
       case 'success':
         return <CheckCircleIcon className="w-6 h-6 text-green-400" />;
       case 'info':
-        return <InformationCircleIcon className="w-6 h-6 text-blue-400" />;
+        return <InformationCircleIcon className="w-6 h-6 text-orange-400" />;
       case 'chat':
-        return <ChatIcon className="w-6 h-6 text-indigo-400" />;
+        return <ChatIcon className="w-6 h-6 text-orange-400" />;
       case 'error':
         return <InformationCircleIcon className="w-6 h-6 text-red-400" />;
       default:

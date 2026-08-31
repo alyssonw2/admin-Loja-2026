@@ -128,8 +128,8 @@ const CartDetail: React.FC<CartDetailProps> = ({ cart, onBack, theme, onRecoverC
 
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Visitas', val: '1.2k', color: 'bg-blue-500' },
-                { label: 'Interesse', val: '45%', color: 'bg-indigo-500' },
+                { label: 'Visitas', val: '1.2k', color: 'bg-orange-400' },
+                { label: 'Interesse', val: '45%', color: 'bg-orange-500' },
                 { label: 'Abandono', val: '26%', color: 'bg-orange-500' },
                 { label: 'Conversão', val: '15%', color: 'bg-green-500' },
               ].map((m, i) => (

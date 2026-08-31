@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { ArrowRightIcon, StorefrontIcon } from '../components/icons/Icons';
+import { ArrowRightIcon } from '../components/icons/Icons';
 import { loginPanelUser } from '../services/apiService';
 import type { Toast, User } from '../types';
+import logoGrupod from '../assets/logogrupod.png';
 
 interface LoginProps {
   onLoginSuccess: (user: User) => void;
@@ -40,15 +41,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
     <div className="min-h-screen font-sans flex flex-col relative overflow-hidden items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20 pointer-events-none">
           <div className="absolute top-0 -left-10 w-72 h-72 bg-primary rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
-          <div className="absolute bottom-0 -right-10 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-0 -right-10 w-72 h-72 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 transition-all">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-             <div className="bg-primary p-3 rounded-xl text-indigo-50 shadow-lg">
-                <StorefrontIcon className="w-8 h-8" />
-            </div>
+            <img src={logoGrupod} alt="Grupod" className="max-h-24 max-w-[200px] object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-indigo-50">Bem-vindo de volta</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">Acesse o painel administrativo da sua loja</p>
@@ -116,17 +115,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister, sho
           </div>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-                Ainda não tem uma conta?{' '}
-                <button 
-                    onClick={onNavigateToRegister}
-                    className="font-bold text-primary hover:text-primary-dark transition-colors"
-                >
-                    Criar conta grátis
-                </button>
-            </p>
-        </div>
+
       </div>
     </div>
   );

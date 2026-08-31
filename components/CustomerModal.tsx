@@ -1,29 +1,56 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Customer, Toast } from '../types';
 
 interface CustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (customer: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>) => void;
+  customer?: Customer | null;
+  onSave: (customer: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>, id?: string) => void;
   showToast: (message: string, type: Toast['type']) => void;
 }
 
-const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, onSave, showToast }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    cpfCnpj: '',
-    phone: '',
-    whatsapp: '',
-    street: '',
-    number: '',
-    complement: '',
-    neighborhood: '',
-    city: '',
-    state: '',
-    zipCode: ''
-  });
+const emptyForm = {
+  name: '',
+  email: '',
+  cpfCnpj: '',
+  phone: '',
+  whatsapp: '',
+  street: '',
+  number: '',
+  complement: '',
+  neighborhood: '',
+  city: '',
+  state: '',
+  zipCode: ''
+};
+
+const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, customer, onSave, showToast }) => {
+  const [formData, setFormData] = useState(emptyForm);
+  const isEditing = !!customer;
+
+  useEffect(() => {
+    if (isOpen) {
+      if (customer) {
+        setFormData({
+          name: customer.name || '',
+          email: customer.email || '',
+          cpfCnpj: customer.cpfCnpj || '',
+          phone: customer.contacts?.phone || '',
+          whatsapp: customer.contacts?.whatsapp || '',
+          street: customer.address?.street || '',
+          number: customer.address?.number || '',
+          complement: customer.address?.complement || '',
+          neighborhood: customer.address?.neighborhood || '',
+          city: customer.address?.city || '',
+          state: customer.address?.state || '',
+          zipCode: customer.address?.zipCode || ''
+        });
+      } else {
+        setFormData(emptyForm);
+      }
+    }
+  }, [isOpen, customer]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,7 +94,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, onSave, 
     const newCustomer = {
       name: formData.name,
       email: formData.email,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=random`,
+      avatarUrl: customer?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=random`,
       cpfCnpj: formData.cpfCnpj,
       contacts: {
         phone: formData.phone,
@@ -84,11 +111,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, onSave, 
       }
     };
 
-    onSave(newCustomer);
-    setFormData({
-        name: '', email: '', cpfCnpj: '', phone: '', whatsapp: '',
-        street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zipCode: ''
-    });
+    onSave(newCustomer, customer?.id);
+    setFormData(emptyForm);
     onClose();
   };
 
@@ -97,7 +121,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, onSave, 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 overflow-y-auto">
       <div className="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-2xl text-white my-8">
-        <h2 className="text-2xl font-bold mb-6">Adicionar Cliente</h2>
+        <h2 className="text-2xl font-bold mb-6">{isEditing ? 'Editar Cliente' : 'Adicionar Cliente'}</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           
           {/* Dados Pessoais */}

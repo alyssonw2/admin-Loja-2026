@@ -36,12 +36,12 @@ const CustomNode = (props: any) => {
     if (isDark) {
       if (name.includes('Site')) return '#3b82f6'; // Azul
       if (name.includes('Produto')) return '#8b5cf6'; // Roxo
-      if (name.includes('Carrinho')) return '#6366f1'; // Indigo
+      if (name.includes('Carrinho')) return '#f97316'; // Laranja
       if (name.includes('Favoritos')) return '#a855f7'; // Roxo claro
       if (name.includes('Pagamento')) return '#10b981'; // Verde
       if (name.includes('Cancelou')) return '#ef4444'; // Vermelho
       if (name.includes('Abandonado')) return '#f97316'; // Laranja
-      return '#6366f1';
+      return '#f97316';
     } else {
       if (name.includes('Site')) return '#2563eb'; // Azul
       if (name.includes('Produto')) return '#7c3aed'; // Roxo

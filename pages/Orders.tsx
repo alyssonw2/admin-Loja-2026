@@ -140,7 +140,7 @@ const Orders: React.FC<OrdersProps> = ({ orders, onViewOrder }) => {
                       </span>
                     </td>
                     <td className="p-4">
-                      <button onClick={() => onViewOrder(order)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Ver Detalhes</button>
+                      <button onClick={() => onViewOrder(order)} className="text-primary hover:text-primary-dark dark:text-orange-400 dark:hover:text-orange-300">Ver Detalhes</button>
                     </td>
                   </tr>
                 )))}

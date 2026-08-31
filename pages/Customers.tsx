@@ -2,20 +2,44 @@
 import React, { useState } from 'react';
 import type { Customer, Toast } from '../types';
 import CustomerModal from '../components/CustomerModal';
+import ConfirmationModal from '../components/ConfirmationModal';
+import { PencilIcon, TrashIcon } from '../components/icons/Icons';
 
 interface CustomersProps {
   customers: Customer[];
   onViewProfile: (customer: Customer) => void;
   addCustomer?: (customer: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>) => void;
+  updateCustomer?: (id: string, customer: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>) => void;
+  deleteCustomer?: (id: string) => void;
   showToast?: (message: string, type: Toast['type']) => void;
 }
 
-const Customers: React.FC<CustomersProps> = ({ customers, onViewProfile, addCustomer, showToast }) => {
+const Customers: React.FC<CustomersProps> = ({ customers, onViewProfile, addCustomer, updateCustomer, deleteCustomer, showToast }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
-  const handleSaveCustomer = (newCustomer: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>) => {
-      if (addCustomer) {
+  const handleSaveCustomer = (newCustomer: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>, id?: string) => {
+      if (id && updateCustomer) {
+          updateCustomer(id, newCustomer);
+      } else if (addCustomer) {
           addCustomer(newCustomer);
+      }
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+      setEditingCustomer(customer);
+      setIsModalOpen(true);
+  };
+
+  const handleAddCustomer = () => {
+      setEditingCustomer(null);
+      setIsModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+      if (customerToDelete && deleteCustomer) {
+          deleteCustomer(customerToDelete.id);
       }
   };
 
@@ -25,7 +49,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, onViewProfile, addCust
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Clientes</h2>
         {addCustomer && (
             <button 
-                onClick={() => setIsModalOpen(true)}
+                onClick={handleAddCustomer}
                 className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg"
             >
                 Adicionar Cliente
@@ -61,7 +85,11 @@ const Customers: React.FC<CustomersProps> = ({ customers, onViewProfile, addCust
                 <td className="p-4 text-gray-500 dark:text-gray-400">{new Date(customer.joinDate).toLocaleDateString('pt-BR')}</td>
                 <td className="p-4 text-gray-900 dark:text-white">R$ {Number(customer.totalSpent).toFixed(2)}</td>
                 <td className="p-4">
-                  <button onClick={() => onViewProfile(customer)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Ver Perfil</button>
+                  <div className="flex items-center space-x-3">
+                    <button onClick={() => onViewProfile(customer)} className="text-primary hover:text-primary-dark dark:text-orange-400 dark:hover:text-orange-300">Ver Perfil</button>
+                    <button onClick={() => handleEditCustomer(customer)} className="text-primary hover:text-primary-dark dark:text-orange-400 dark:hover:text-orange-300 inline-flex items-center" title="Editar cliente"><PencilIcon className="w-4 h-4" /></button>
+                    <button onClick={() => setCustomerToDelete(customer)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center" title="Excluir cliente"><TrashIcon className="w-4 h-4" /></button>
+                  </div>
                 </td>
               </tr>
             )))}
@@ -73,10 +101,21 @@ const Customers: React.FC<CustomersProps> = ({ customers, onViewProfile, addCust
           <CustomerModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
+            customer={editingCustomer}
             onSave={handleSaveCustomer}
             showToast={showToast}
           />
       )}
+
+      <ConfirmationModal
+        isOpen={!!customerToDelete}
+        onClose={() => setCustomerToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir Cliente"
+        message={`Tem certeza que deseja excluir o cliente "${customerToDelete?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+      />
     </div>
   );
 };

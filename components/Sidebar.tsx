@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 // FIX: Changed import to not be a type-only import, as the Page enum is used as a value.
 import { Page } from '../types';
-import { DashboardIcon, ChatIcon, ProductIcon, OrderIcon, CustomerIcon, AnalyticsIcon, SettingsIcon, LogoutIcon, TicketIcon, StarIcon, CpuChipIcon, ChevronDownIcon, ShoppingCartIcon } from './icons/Icons';
+import { DashboardIcon, ChatIcon, ProductIcon, OrderIcon, CustomerIcon, AnalyticsIcon, SettingsIcon, LogoutIcon, TicketIcon, StarIcon, ChevronDownIcon, ShoppingCartIcon } from './icons/Icons';
 
 interface SidebarProps {
   currentPage: Page;
@@ -26,13 +26,6 @@ const navItems = [
   { page: Page.Coupons, icon: TicketIcon, title: 'Cupons' },
   { page: Page.Customers, icon: CustomerIcon, title: 'Clientes' },
   { page: Page.Reviews, icon: StarIcon, title: 'Avaliações' },
-  {
-    title: 'Marketplace',
-    icon: CpuChipIcon,
-    subItems: [
-      { page: Page.MarketplaceMercadoLivre, title: 'Mercado Livre' },
-    ]
-  },
   { page: Page.Analytics, icon: AnalyticsIcon, title: 'Análises' },
   { page: Page.Settings, icon: SettingsIcon, title: 'Configurações' },
 ];
@@ -51,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
   return (
     <aside className="w-64 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex flex-col h-screen border-r border-gray-200 dark:border-gray-700">
       <div className="p-6 text-center border-b border-gray-200 dark:border-gray-700">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">E-connect</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Loja</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">Admin Panel</p>
       </div>
       <nav className="flex-1 p-4 overflow-y-auto">

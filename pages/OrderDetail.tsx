@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import type { Order, Review, OrderEvent, Toast } from '../types';
+import type { Order, Review, OrderEvent, Toast, Product } from '../types';
 import { OrderStatus, OrderOrigin } from '../types';
 import { ChevronLeftIcon, CheckCircleIcon, StarIcon, DocumentArrowUpIcon, InformationCircleIcon } from '../components/icons/Icons';
 import { getStatusColorClass, getOriginIcon } from '../utils/helpers';
@@ -8,6 +8,7 @@ import { getStatusColorClass, getOriginIcon } from '../utils/helpers';
 interface OrderDetailProps {
   order: Order | null;
   reviews: Review[];
+  products?: Product[];
   onBack: () => void;
   updateOrder: (order: Order) => void;
   showToast: (message: string, type: Toast['type']) => void;
@@ -21,7 +22,40 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => (
   </div>
 );
 
-const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updateOrder, showToast }) => {
+const PlaceholderImage: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+  <svg className={`${className} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+// Componente que exibe a imagem do item com fallback automático caso o link esteja quebrado
+const ItemImage: React.FC<{ src: string; fallbackSrc?: string; alt: string }> = ({ src, fallbackSrc, alt }) => {
+  const [currentSrc, setCurrentSrc] = useState(src);
+  const [showPlaceholder, setShowPlaceholder] = useState(false);
+
+  if (!currentSrc || showPlaceholder) {
+    return <PlaceholderImage />;
+  }
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      loading="lazy"
+      onError={() => {
+        // Se a imagem do pedido falhar, tenta a imagem atual do produto cadastrado
+        if (fallbackSrc && currentSrc !== fallbackSrc) {
+          setCurrentSrc(fallbackSrc);
+        } else {
+          setShowPlaceholder(true);
+        }
+      }}
+      className="w-full h-full object-cover"
+    />
+  );
+};
+
+const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, products = [], onBack, updateOrder, showToast }) => {
   const [trackingCode, setTrackingCode] = useState('');
   
   const customerReview = useMemo(() => {
@@ -43,14 +77,21 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
       }
     }
 
-    return rawItems.map((item: any) => ({
-      productId: item.productId || item.product_id,
-      productName: item.productName || item.product_name || 'Produto sem nome',
-      quantity: item.quantity || 0,
-      price: item.price || 0,
-      imageUrl: item.imageUrl || item.image_url || ''
-    }));
-  }, [order?.items]);
+    return rawItems.map((item: any) => {
+      const productId = item.productId || item.product_id;
+      // Fallback: busca a imagem atual do produto cadastrado caso a do pedido esteja vazia ou quebrada
+      const product = products.find((p: Product) => p.id === productId);
+      const productImage = (product?.media && product.media[0]?.url) || '';
+      return {
+        productId,
+        productName: item.productName || item.product_name || product?.name || 'Produto sem nome',
+        quantity: item.quantity || 0,
+        price: item.price || 0,
+        imageUrl: item.imageUrl || item.image_url || productImage,
+        fallbackImageUrl: productImage
+      };
+    });
+  }, [order?.items, products]);
 
   // Normalização de eventos da linha do tempo
   const events = useMemo(() => {
@@ -127,13 +168,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
               {items.map((item: any, idx: number) => (
                 <div key={`${item.productId}-${idx}`} className="flex items-center gap-4 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-600">
                   <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
-                    ) : (
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    )}
+                    <ItemImage src={item.imageUrl} fallbackSrc={item.fallbackImageUrl} alt={item.productName} />
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 dark:text-indigo-50">{item.productName}</p>
@@ -177,7 +212,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
                  <h3 className="text-xl font-bold text-gray-900 dark:text-indigo-50 mb-4">Gerenciar Pedido</h3>
                  <div className="space-y-4">
                     {order.status === OrderStatus.Pending && (
-                        <button onClick={() => handleUpdateStatus(OrderStatus.Processing, "Pedido aceito e em preparação.")} className="w-full bg-blue-600 hover:bg-blue-500 text-indigo-50 font-bold py-3 px-4 rounded-lg shadow-md transition-all active:scale-95">
+                        <button onClick={() => handleUpdateStatus(OrderStatus.Processing, "Pedido aceito e em preparação.")} className="w-full bg-primary hover:bg-primary-dark text-orange-50 font-bold py-3 px-4 rounded-lg shadow-md transition-all active:scale-95">
                             Aceitar Pedido
                         </button>
                     )}
@@ -187,7 +222,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, reviews, onBack, updat
                                 <label htmlFor="trackingCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Código de Rastreio</label>
                                 <div className="flex gap-2">
                                     <input id="trackingCode" type="text" value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="BR123..." className="flex-1 bg-gray-50 dark:bg-gray-900 p-3 rounded-md border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-indigo-50" required/>
-                                    <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-indigo-50 font-bold py-2 px-4 rounded-lg shadow-md transition-all active:scale-95">
+                                    <button type="submit" className="bg-primary hover:bg-primary-dark text-orange-50 font-bold py-2 px-4 rounded-lg shadow-md transition-all active:scale-95">
                                         Enviar
                                     </button>
                                 </div>

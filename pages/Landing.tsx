@@ -79,7 +79,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigateToLogin, onRegisterSuccess,
                         <div className="bg-primary p-2 rounded-lg text-white">
                             <StorefrontIcon className="w-6 h-6" />
                         </div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">E-connect</span>
+                        <span className="text-xl font-bold text-gray-900 dark:text-white">Loja</span>
                     </div>
                     <button 
                         onClick={onNavigateToLogin}
@@ -264,7 +264,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigateToLogin, onRegisterSuccess,
                 <section className="py-16 px-6 lg:px-12">
                     <div className="max-w-7xl mx-auto">
                         <h2 className="text-3xl lg:text-4xl font-bold text-center text-gray-900 dark:text-white mb-4">
-                            Por que escolher a E-connect?
+                            Por que escolher a Loja?
                         </h2>
                         <p className="text-center text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto">
                             Desenvolvida especialmente para lojas de moda, com recursos exclusivos para o seu negócio crescer.
@@ -363,7 +363,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigateToLogin, onRegisterSuccess,
                             </div>
 
                             <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg text-center">
-                                <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                                     <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M23.5 9.5h-.09c-.26-1.73-1.23-3.24-2.63-4.18-.04-1.51-.58-2.92-1.52-3.98C18.1.09 16.12-.35 14.27.2c-1.34.4-2.43 1.32-3.04 2.52-.61-1.2-1.7-2.12-3.04-2.52C6.34-.35 4.36.09 3.2 1.34c-.94 1.06-1.48 2.47-1.52 3.98C.28 6.26-.69 7.77-.95 9.5H.5c0 .28.22.5.5.5h1.59c.17 2.34 1.27 4.46 3.02 5.88-.07.37-.11.75-.11 1.12 0 2.76 2.24 5 5 5s5-2.24 5-5c0-.37-.04-.75-.11-1.12 1.75-1.42 2.85-3.54 3.02-5.88H23c.28 0 .5-.22.5-.5zM10.5 20c-1.93 0-3.5-1.57-3.5-3.5S8.57 13 10.5 13s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
                                     </svg>

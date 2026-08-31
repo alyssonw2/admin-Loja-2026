@@ -196,7 +196,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
         ...formData, 
         media: mediaFiles 
     };
-    onSave(product ? { ...productData, id: product.id } : productData);
+    // Só envia o id se for um produto existente (edição). Produtos clonados não possuem id e são cadastrados como novos.
+    onSave(product && product.id ? { ...productData, id: product.id } : productData);
   };
   
   const categoryOptions = useMemo(() => {
@@ -421,7 +422,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                             
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20">
                                 {media.type === 'image' && (
-                                    <button type="button" onClick={() => handleOpenMarkerModal(media.id)} className="bg-blue-600 hover:bg-blue-500 text-white rounded-full p-2.5 shadow-xl transition-all hover:scale-110">
+                                    <button type="button" onClick={() => handleOpenMarkerModal(media.id)} className="bg-primary hover:bg-primary-dark text-white rounded-full p-2.5 shadow-xl transition-all hover:scale-110">
                                         <TagIcon className="w-5 h-5"/>
                                     </button>
                                 )}
@@ -432,7 +433,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onBack, onSave, product, cate
                             
                             <div className="absolute bottom-2 left-2 bg-black/70 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white z-10">#{index + 1}</div>
                             {media.type === 'video' && (
-                                <div className="absolute top-2 left-2 bg-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg z-10 flex items-center gap-1">
+                                <div className="absolute top-2 left-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg z-10 flex items-center gap-1">
                                     <VideoCameraIcon className="w-3 h-3"/>
                                     VÍDEO
                                 </div>

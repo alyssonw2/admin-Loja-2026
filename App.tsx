@@ -24,9 +24,10 @@ import CartDetail from './pages/CartDetail';
 import { Page, Order, Customer, Product, Toast, User, Cart, StoreSettings } from './types';
 import { useMockData } from './hooks/useMockData';
 import ToastContainer from './components/Toast';
-import { authenticateAndInitializeSystem, getSavedUserSession, clearUserSession } from './services/apiService';
+import { authenticateAndInitializeSystem, getSavedUserSession, clearUserSession, db } from './services/apiService';
 import { getInstanceStatus, getChats } from './services/whatsappService';
 import Login from './pages/Login';
+import logoGrupod from './assets/logogrupod.png';
 
 const App: React.FC = () => {
   const [bootStatus, setBootStatus] = useState<'booting' | 'ready' | 'error'>('booting');
@@ -111,7 +112,7 @@ const App: React.FC = () => {
     refreshData,
     products, addProduct, updateProduct, deleteProduct, 
     orders, updateOrder,
-    customers, addCustomer,
+    customers, addCustomer, updateCustomer, deleteCustomer,
     carts,
     questions, updateQuestion, deleteQuestion,
     kpi,
@@ -203,6 +204,26 @@ const App: React.FC = () => {
   }, []);
 
   const handleUpdateUser = useCallback((updatedUser: User) => setCurrentUser(updatedUser), []);
+
+  // Salva as configurações e, quando o nome da loja muda, sincroniza também a tabela de lojas
+  // e o usuário logado para que o nome apareça no cabeçalho e no perfil.
+  const handleUpdateStoreSettings = useCallback(async (newSettings: StoreSettings) => {
+      await updateStoreSettings(newSettings);
+      if (currentUser && newSettings.storeName && newSettings.storeName.trim() && newSettings.storeName !== currentUser.name) {
+          try {
+              await db.update('stores', currentUser.id, { name: newSettings.storeName.trim() });
+              setCurrentUser(prev => prev ? {
+                  ...prev,
+                  name: newSettings.storeName.trim(),
+                  username: newSettings.storeName.trim(),
+                  avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(newSettings.storeName.trim())}&background=random`
+              } : prev);
+          } catch (e) {
+              console.error("Erro ao atualizar nome da loja na tabela de lojas.", e);
+          }
+      }
+  }, [updateStoreSettings, currentUser]);
+
   const handleRegisterSuccess = useCallback((storeId: number | string, zipCode: string) => {
       setPendingStoreId(storeId);
       setPendingZipCode(zipCode);
@@ -262,6 +283,33 @@ const App: React.FC = () => {
     setEditingProduct(product);
     setCurrentPage(Page.AddEditProduct);
   }, []);
+
+  // Clona um produto existente abrindo o formulário já preenchido para cadastro rápido
+  const navigateToCloneProduct = useCallback((product: Product) => {
+    const clone: Omit<Product, 'id'> = {
+      name: product.name ? `Cópia de ${product.name}` : '',
+      sku: product.sku ? `${product.sku}-C${Date.now().toString().slice(-4)}` : '',
+      price: product.price,
+      promotionalPrice: product.promotionalPrice || '0',
+      stock: product.stock,
+      sizes: Array.isArray(product.sizes) ? product.sizes.map(s => ({ ...s })) : [],
+      categoryId: product.categoryId,
+      brandId: product.brandId,
+      modelId: product.modelId,
+      materialId: product.materialId,
+      colorId: product.colorId,
+      media: Array.isArray(product.media) ? product.media.map(m => ({ ...m, id: `clone-${Date.now()}-${m.id}`, markers: m.markers ? [...m.markers] : [] })) : [],
+      description: product.description,
+      condition: product.condition || 'Novo',
+      status: product.status || 'Ativo',
+      width: product.width || '',
+      height: product.height || '',
+      depth: product.depth || '',
+      weight: product.weight || '',
+    };
+    setEditingProduct(clone as Product);
+    setCurrentPage(Page.AddEditProduct);
+  }, []);
   
   const handleBackToProducts = useCallback(() => {
     setEditingProduct(null);
@@ -287,20 +335,13 @@ const App: React.FC = () => {
     setCurrentPage(Page.Chat);
   }, []);
   
-  const LoadingScreen = ({ message }: { message: string }) => (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white animate-fade-in">
-        <div className="text-center">
-            <svg className="mx-auto h-12 w-12 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          <h1 className="text-2xl font-bold mt-4">E-connect</h1>
-          <p className="text-gray-600 dark:text-gray-400">{message}</p>
-        </div>
+  const LoadingScreen = () => (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 animate-fade-in">
+        <img src={logoGrupod} alt="Grupod" className="max-h-32 max-w-xs object-contain" />
       </div>
   );
 
-  if (bootStatus === 'booting') return <LoadingScreen message={bootMessage} />
+  if (bootStatus === 'booting') return <LoadingScreen />
   if (bootStatus === 'error') return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white p-8">
         <div className="text-center bg-gray-800 border border-red-500/50 p-8 rounded-lg shadow-xl">
@@ -318,7 +359,7 @@ const App: React.FC = () => {
       return <Login onLoginSuccess={handleLoginSuccess} onNavigateToRegister={() => setCurrentPage(Page.Landing)} showToast={showToast} />;
   }
 
-  if (isDataLoading || !storeSettings) return <LoadingScreen message="Carregando dados da loja..." />
+  if (isDataLoading || !storeSettings) return <LoadingScreen />
 
   const renderPage = () => {
     switch (currentPage) {
@@ -337,7 +378,7 @@ const App: React.FC = () => {
           return <QuestionsAndAnswers questions={questions} products={products} customers={customers} onUpdate={updateQuestion} onDelete={deleteQuestion} showToast={showToast} />;
       case Page.Products:
         return <Products 
-            products={products} onAddProductClick={navigateToAddProduct} onEditProductClick={navigateToEditProduct} deleteProduct={deleteProduct}
+            products={products} onAddProductClick={navigateToAddProduct} onEditProductClick={navigateToEditProduct} onCloneProductClick={navigateToCloneProduct} deleteProduct={deleteProduct}
             categories={categories} addCategory={addCategory} updateCategory={updateCategory} deleteCategory={deleteCategory}
             brands={brands} addBrand={addBrand} updateBrand={updateBrand} deleteBrand={deleteBrand}
             models={models} addModel={addModel} updateModel={updateModel} deleteModel={deleteModel}
@@ -352,7 +393,7 @@ const App: React.FC = () => {
        case Page.AddEditProduct:
         return <ProductForm onBack={handleBackToProducts} onSave={handleSaveProduct} product={editingProduct} categories={categories} brands={brands} models={models} materials={materials} colors={colors} showToast={showToast} />;
       case Page.Orders: return <Orders orders={orders} onViewOrder={handleViewOrder} />;
-      case Page.OrderDetail: return <OrderDetail order={selectedOrder} onBack={handleBackToOrders} updateOrder={updateOrder} reviews={reviews} showToast={showToast} />;
+      case Page.OrderDetail: return <OrderDetail order={selectedOrder} onBack={handleBackToOrders} updateOrder={updateOrder} reviews={reviews} products={products} showToast={showToast} />;
       case Page.AbandonedCarts: 
         return (
           <AbandonedCarts 
@@ -371,13 +412,13 @@ const App: React.FC = () => {
           />
         );
       case Page.Coupons: return <Coupons coupons={coupons} addCoupon={addCoupon} updateCoupon={updateCoupon} deleteCoupon={deleteCoupon} showToast={showToast} />;
-      case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} showToast={showToast} />;
+      case Page.Customers: return <Customers customers={customers} onViewProfile={handleViewCustomerProfile} addCustomer={addCustomer} updateCustomer={updateCustomer} deleteCustomer={deleteCustomer} showToast={showToast} />;
       case Page.CustomerProfile: return <CustomerProfile customer={selectedCustomer} orders={orders} onBack={handleBackToCustomers} />;
       case Page.Reviews: return <Reviews reviews={reviews} addReview={addReview} updateReview={updateReview} deleteReview={deleteReview} showToast={showToast} />;
       case Page.Analytics: return <Analytics data={analyticsData} period={analyticsPeriod} setPeriod={setAnalyticsPeriod} theme={theme} />;
       case Page.Settings:
         return <Settings 
-          settings={storeSettings} updateSettings={updateStoreSettings} 
+          settings={storeSettings} updateSettings={handleUpdateStoreSettings} 
           addBanner={addBanner} updateBanner={updateBanner} deleteBanner={deleteBanner} 
           showToast={showToast}
           categories={categories} brands={brands} models={models} materials={materials} colors={colors}

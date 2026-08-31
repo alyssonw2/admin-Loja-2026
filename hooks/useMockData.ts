@@ -367,6 +367,34 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
               console.error(e);
               showToast('Erro ao adicionar cliente', 'error');
           }
+      },
+      update: async (id: string, item: Omit<Customer, 'id' | 'joinDate' | 'totalSpent'>) => {
+          try {
+              const existing = customers.find(c => c.id === id);
+              const updated = { 
+                  ...existing, 
+                  ...item,
+                  id,
+                  joinDate: existing?.joinDate || new Date().toISOString(),
+                  totalSpent: existing?.totalSpent ?? "0.00"
+              } as Customer;
+              await db.update('customers', id, updated);
+              showToast('Cliente atualizado com sucesso', 'success');
+              reloadCustomers();
+          } catch (e) {
+              console.error(e);
+              showToast('Erro ao atualizar cliente', 'error');
+          }
+      },
+      delete: async (id: string) => {
+          try {
+              await db.delete('customers', id);
+              showToast('Cliente excluído com sucesso', 'success');
+              reloadCustomers();
+          } catch (e) {
+              console.error(e);
+              showToast('Erro ao excluir cliente', 'error');
+          }
       }
   };
 
@@ -539,7 +567,7 @@ export const useMockData = ({ showToast, isAuthenticated }: UseMockDataProps) =>
     refreshData: fetchData, // Exposed for manual reload
     products, addProduct: productCrud.add, updateProduct: productCrud.update, deleteProduct: productCrud.delete,
     orders, updateOrder: orderCrud.update,
-    customers, addCustomer: customerCrud.add, // Added addCustomer
+    customers, addCustomer: customerCrud.add, updateCustomer: customerCrud.update, deleteCustomer: customerCrud.delete,
     carts, // Exposed carts state
     questions, updateQuestion: questionCrud.update, deleteQuestion: questionCrud.delete, // Questions
     kpi,
